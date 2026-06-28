@@ -45,6 +45,7 @@ struct DashboardView: View {
           Image(systemName: mode.symbol).tag(mode)
         }
       }
+      .labelsHidden()
       .pickerStyle(.segmented)
       .frame(width: 118)
       .accessibilityIdentifier("dashboard-mode-picker")
@@ -116,7 +117,7 @@ struct DashboardView: View {
           Text("All tools").tag(Optional<ToolIdentifier>.none)
           Text("Codex").tag(Optional(ToolIdentifier.codexCLI))
           Text("Claude").tag(Optional(ToolIdentifier.claudeCode))
-          Text("Gemini").tag(Optional(ToolIdentifier.geminiCLI))
+          Text("Antigravity").tag(Optional(ToolIdentifier.antigravity))
         }
 
         Picker(

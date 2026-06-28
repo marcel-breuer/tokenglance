@@ -24,6 +24,9 @@ let package = Package(
     .executableTarget(
       name: "TokenGlance",
       dependencies: ["TokenGlanceCore"],
+      resources: [
+        .copy("Resources")
+      ],
       swiftSettings: [
         .enableUpcomingFeature("StrictConcurrency")
       ]

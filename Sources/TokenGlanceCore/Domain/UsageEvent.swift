@@ -3,13 +3,21 @@ import Foundation
 public enum CollectorIdentifier: String, Codable, CaseIterable, Sendable {
   case codexCLI = "codex-cli"
   case claudeCode = "claude-code"
+  case antigravity = "antigravity"
   case geminiCLI = "gemini-cli"
+
+  public static let allCases: [CollectorIdentifier] = [
+    .codexCLI,
+    .claudeCode,
+    .antigravity,
+  ]
 
   public var displayName: String {
     switch self {
     case .codexCLI: "Codex CLI"
     case .claudeCode: "Claude Code"
-    case .geminiCLI: "Gemini CLI"
+    case .antigravity: "Antigravity"
+    case .geminiCLI: "Gemini CLI Legacy"
     }
   }
 }
@@ -17,7 +25,14 @@ public enum CollectorIdentifier: String, Codable, CaseIterable, Sendable {
 public enum ToolIdentifier: String, Codable, CaseIterable, Sendable {
   case codexCLI = "codex-cli"
   case claudeCode = "claude-code"
+  case antigravity = "antigravity"
   case geminiCLI = "gemini-cli"
+
+  public static let allCases: [ToolIdentifier] = [
+    .codexCLI,
+    .claudeCode,
+    .antigravity,
+  ]
 }
 
 public enum ProviderIdentifier: String, Codable, Sendable {

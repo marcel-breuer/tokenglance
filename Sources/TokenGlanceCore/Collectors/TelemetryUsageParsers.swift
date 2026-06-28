@@ -126,8 +126,8 @@ public struct GeminiTelemetryParser: Sendable {
       events.append(
         UsageEvent(
           id: id,
-          collector: .geminiCLI,
-          tool: .geminiCLI,
+          collector: .antigravity,
+          tool: .antigravity,
           provider: .google,
           model: model,
           timestamp: timestamp,

@@ -171,9 +171,9 @@ public struct ClaudeCodeCollector: UsageCollector {
   }
 }
 
-public struct GeminiCLICollector: UsageCollector {
-  public let identifier: CollectorIdentifier = .geminiCLI
-  public let displayName = "Gemini CLI"
+public struct AntigravityCollector: UsageCollector {
+  public let identifier: CollectorIdentifier = .antigravity
+  public let displayName = "Antigravity"
   public let capabilities: CollectorCapabilities = [
     .inputTokens,
     .outputTokens,
@@ -192,11 +192,11 @@ public struct GeminiCLICollector: UsageCollector {
   }
 
   public func detect() async -> CollectorDetectionResult {
-    guard let path = detector.locate("gemini") else {
+    guard let path = detector.locate("agy") else {
       return CollectorDetectionResult(
         identifier: identifier, status: .notInstalled, executablePath: nil, version: nil,
         explanation:
-          "Gemini CLI executable was not found on PATH. Antigravity is a separate application and is not treated as Gemini CLI."
+          "Antigravity CLI executable 'agy' was not found on PATH or standard Homebrew paths."
       )
     }
     return CollectorDetectionResult(
@@ -205,7 +205,7 @@ public struct GeminiCLICollector: UsageCollector {
       executablePath: path,
       version: detector.version(executablePath: path),
       explanation:
-        "Gemini CLI is installed. TokenGlance requires local telemetry with prompt logging disabled to be explicitly configured."
+        "Antigravity CLI is installed. TokenGlance has not yet verified a documented local token metadata source, so it will not read Antigravity conversations, logs, or browser-style storage."
     )
   }
 
@@ -219,8 +219,8 @@ public struct GeminiCLICollector: UsageCollector {
     return CollectorDiagnostic(
       identifier: identifier,
       status: detection.status,
-      sourceKind: .localTelemetry,
-      parserVersion: GeminiTelemetryParser.parserVersion,
+      sourceKind: .unsupported,
+      parserVersion: "antigravity-detection-v1",
       explanation: detection.explanation,
       detectedVersion: detection.version
     )

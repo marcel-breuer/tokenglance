@@ -33,7 +33,7 @@ final class AppDependencies: ObservableObject {
     collectors = [
       CodexCLICollector(),
       ClaudeCodeCollector(),
-      GeminiCLICollector(),
+      AntigravityCollector(),
     ]
   }
 

@@ -18,9 +18,9 @@ TokenGlance refreshes automatically by default. Counts update when supported too
 | ---- | --------- | ----------------- | ------------ | ---------------- | -------- | -------------- |
 | Codex CLI | Yes | Yes, from verified local JSONL token metadata | Reconciliation | input, output, cached input, reasoning, total when present | Exact | No |
 | Claude Code | Yes | No by default | Telemetry parser available | input, output, cache read, cache creation | Exact when telemetry is configured | Yes |
-| Gemini CLI | Yes | No by default | Telemetry parser available | input, output, cached content, thoughts/reasoning, tool, total | Exact when telemetry is configured | Yes |
+| Antigravity | Yes, via `agy --version` | Not yet | Not yet | Not yet verified | Unavailable until a documented local token metadata source is verified | Yes |
 
-Antigravity is not part of the MVP collector set.
+Antigravity replaces Gemini CLI detection because the standalone Gemini CLI is no longer assumed to be available. TokenGlance detects Antigravity safely but does not read Antigravity conversations, logs, browser-style storage, or credentials until a documented local token metadata source is verified.
 
 ## Privacy
 
@@ -47,7 +47,7 @@ brew tap marcel-breuer/tap
 brew install --cask tokenglance
 ```
 
-TokenGlance is not distributed through the Mac App Store, is not signed with an Apple Developer ID, and is not notarized by Apple. Homebrew 6 no longer accepts the old `--no-quarantine` install option. If macOS blocks the first launch, approve TokenGlance in System Settings > Privacy & Security or remove the quarantine attribute for this app only:
+TokenGlance is currently not signed with an Apple Developer ID and is not notarized by Apple. Homebrew 6 no longer accepts the old `--no-quarantine` install option. If macOS blocks the first launch, approve TokenGlance in System Settings > Privacy & Security or remove the quarantine attribute for this app only:
 
 ```bash
 xattr -dr com.apple.quarantine /Applications/TokenGlance.app
@@ -94,7 +94,7 @@ TokenGlance supports CSV and JSON export of normalized usage metadata only. Dele
 ## Roadmap
 
 - User-approved Claude Code telemetry setup helper.
-- User-approved Gemini CLI telemetry setup helper.
+- User-approved Antigravity token metadata setup when a documented local source is verified.
 - Additional collectors only after documented local metadata sources are verified.
 
 ## License
