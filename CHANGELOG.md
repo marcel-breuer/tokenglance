@@ -1,5 +1,13 @@
 # Changelog
 
+## Unreleased
+
+### Changed
+
+- Added automatic live refresh so exact local token metadata is imported without pressing refresh manually.
+- Replaced Gemini CLI detection with Antigravity CLI detection through `agy`.
+- Added a generated macOS app icon.
+
 ## 0.1.1
 
 ### Changed
@@ -7,7 +15,6 @@
 - Updated Homebrew and Gatekeeper documentation for Homebrew 6, which no longer accepts `--no-quarantine`.
 - Improved GUI-launched collector detection by checking standard Homebrew paths even when the app receives a sparse macOS environment.
 - Reworked the menu-bar popover into a compact monitor-style interface with internal overview, settings, and diagnostics modes.
-- Added automatic live refresh so exact local token metadata is imported without pressing refresh manually.
 - Added workflow-dispatch release automation that creates the tag and GitHub Release from a supplied semantic version.
 
 ## 0.1.0

@@ -48,7 +48,7 @@ private func event(id: String, timestamp: Date, tool: ToolIdentifier, model: Str
     id: id,
     collector: tool == .codexCLI ? .codexCLI : .claudeCode,
     tool: tool,
-    provider: tool == .geminiCLI ? .google : (tool == .claudeCode ? .anthropic : .openAI),
+    provider: tool == .antigravity ? .google : (tool == .claudeCode ? .anthropic : .openAI),
     model: model,
     timestamp: timestamp,
     tokens: TokenBreakdown(inputTokens: total / 2, outputTokens: total / 2, totalTokens: total),

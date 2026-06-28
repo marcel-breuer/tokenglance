@@ -18,6 +18,7 @@ swift test
 swift build -c release --arch arm64
 
 cp "$BUILD_DIR/TokenGlance" "$MACOS/TokenGlance"
+cp -R "$ROOT/Sources/TokenGlance/Resources/." "$RESOURCES/"
 
 cat > "$CONTENTS/Info.plist" <<PLIST
 <?xml version="1.0" encoding="UTF-8"?>
@@ -30,6 +31,8 @@ cat > "$CONTENTS/Info.plist" <<PLIST
   <string>TokenGlance</string>
   <key>CFBundleIdentifier</key>
   <string>dev.marcelbreuer.tokenglance</string>
+  <key>CFBundleIconFile</key>
+  <string>TokenGlance</string>
   <key>CFBundleInfoDictionaryVersion</key>
   <string>6.0</string>
   <key>CFBundleName</key>

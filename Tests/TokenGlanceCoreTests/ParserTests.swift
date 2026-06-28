@@ -45,14 +45,15 @@ struct ParserTests {
     #expect(batch.events[0].provider == .anthropic)
   }
 
-  @Test("Gemini telemetry parser extracts token categories")
-  func geminiTelemetry() throws {
+  @Test("Google telemetry parser extracts token categories")
+  func googleTelemetry() throws {
     let data = try fixture("GeminiCLI/telemetry.jsonl")
     let batch = GeminiTelemetryParser().parseJSONLines(data, sourceFingerprint: "gemini")
     #expect(batch.events.count == 1)
     #expect(batch.events[0].tokens.outputTokens == 40)
     #expect(batch.events[0].tokens.reasoningTokens == 7)
     #expect(batch.events[0].provider == .google)
+    #expect(batch.events[0].tool == .antigravity)
   }
 }
 
