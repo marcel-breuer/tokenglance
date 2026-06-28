@@ -1,6 +1,6 @@
 cask "tokenglance" do
-  version "0.1.0"
-  sha256 "ca936bf0d448e0d2c9fd6d3d88d890c2ab44d19fbfe0eb3252fdd4fcc3f6edff"
+  version "0.1.1"
+  sha256 "698730c512c1b04f4193cfe79f8cae2d28ebde75743791bb7f8481ef2e6534ce"
 
   url "https://github.com/marcel-breuer/tokenglance/releases/download/v#{version}/TokenGlance-#{version}-arm64.zip"
   name "TokenGlance"
@@ -23,9 +23,15 @@ cask "tokenglance" do
     TokenGlance is open-source software and is not signed or notarized
     through the Apple Developer Program.
 
-    Install it with:
+    Install it with current Homebrew:
 
-      brew install --cask --no-quarantine marcel-breuer/tap/tokenglance
+      brew install --cask marcel-breuer/tap/tokenglance
+
+    If macOS blocks the first launch because the app is unsigned and
+    unnotarized, approve TokenGlance in System Settings > Privacy & Security
+    or remove the quarantine attribute for this app only:
+
+      xattr -dr com.apple.quarantine /Applications/TokenGlance.app
 
     Only install releases obtained from the official TokenGlance
     repository and verify the published checksum.

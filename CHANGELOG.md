@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.1.1
+
+### Changed
+
+- Updated Homebrew and Gatekeeper documentation for Homebrew 6, which no longer accepts `--no-quarantine`.
+- Improved GUI-launched collector detection by checking standard Homebrew paths even when the app receives a sparse macOS environment.
+- Reworked the menu-bar popover into a compact monitor-style interface with internal overview, settings, and diagnostics modes.
+- Added workflow-dispatch release automation that creates the tag and GitHub Release from a supplied semantic version.
+
 ## 0.1.0
 
 ### Added
@@ -17,4 +26,3 @@
 - Claude Code live collection requires explicit local OpenTelemetry configuration and is reported as setup-required by default.
 - Gemini CLI live collection requires the `gemini` executable and explicit local telemetry configuration with prompt logging disabled.
 - Antigravity is detected only as a non-MVP future candidate and is not imported.
-

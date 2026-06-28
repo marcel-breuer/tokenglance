@@ -8,6 +8,7 @@ public struct Redactor: Sendable {
     let home = NSRegularExpression.escapedPattern(
       for: FileManager.default.homeDirectoryForCurrentUser.path)
     result = replacing(result, pattern: home + #"(/[^\s,;)]*)?"#, with: "~/<redacted>")
+    result = replacing(result, pattern: #"/Users/[^/\s,;)]+(/[^\s,;)]*)?"#, with: "~/<redacted>")
     result = replacing(
       result, pattern: #"[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}"#, with: "<redacted-email>",
       options: [.caseInsensitive])
