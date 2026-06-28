@@ -8,8 +8,7 @@ on:
         required: true
         type: string
   push:
-    tags:
-      - "v*.*.*"
+    branches: [main]
 
 permissions:
   contents: write
@@ -17,23 +16,46 @@ permissions:
 jobs:
   release:
     runs-on: macos-15
+    concurrency:
+      group: release
+      cancel-in-progress: false
     steps:
       - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8
         with:
           fetch-depth: 0
       - name: Resolve release version
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
           if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
             VERSION="${{ inputs.version }}"
-            TAG="v${VERSION}"
-            git config user.name "github-actions[bot]"
-            git config user.email "github-actions[bot]@users.noreply.github.com"
-            git tag -a "$TAG" -m "Release $TAG"
-            git push origin "$TAG"
           else
-            TAG="${GITHUB_REF_NAME}"
-            VERSION="${TAG#v}"
+            LATEST_TAG="$(gh release list --limit 1 --json tagName --jq '.[0].tagName // empty')"
+            if [[ -z "$LATEST_TAG" ]]; then
+              LATEST_TAG="$(git tag --list 'v*.*.*' --sort=-v:refname | head -n 1)"
+            fi
+            if [[ -z "$LATEST_TAG" ]]; then
+              VERSION="0.1.0"
+            else
+              VERSION="${LATEST_TAG#v}"
+              IFS=. read -r MAJOR MINOR PATCH <<< "$VERSION"
+              PATCH="$((PATCH + 1))"
+              VERSION="${MAJOR}.${MINOR}.${PATCH}"
+            fi
           fi
+          if [[ ! "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "Version must use MAJOR.MINOR.PATCH format: $VERSION" >&2
+            exit 1
+          fi
+          TAG="v${VERSION}"
+          if git rev-parse "$TAG" >/dev/null 2>&1 || gh release view "$TAG" >/dev/null 2>&1; then
+            echo "Release $TAG already exists." >&2
+            exit 1
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git tag -a "$TAG" -m "Release $TAG"
+          git push origin "$TAG"
           echo "VERSION=$VERSION" >> "$GITHUB_ENV"
           echo "TAG=$TAG" >> "$GITHUB_ENV"
       - name: Package ARM64 app

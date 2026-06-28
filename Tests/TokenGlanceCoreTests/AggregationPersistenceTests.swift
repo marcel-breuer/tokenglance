@@ -39,9 +39,29 @@ struct AggregationPersistenceTests {
       from: Date(timeIntervalSince1970: 0), to: Date().addingTimeInterval(10))
     #expect(events.count == 1)
   }
+
+  @Test("SQLite persistence backfills missing model without duplicating events")
+  func persistenceBackfillsModel() async throws {
+    let url = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+      .appendingPathComponent("db.sqlite")
+    let database = UsageDatabase(url: url)
+    try await database.open()
+
+    let timestamp = Date()
+    let first = event(id: "same", timestamp: timestamp, tool: .codexCLI, model: nil, total: 10)
+    let second = event(
+      id: "same", timestamp: timestamp, tool: .codexCLI, model: "gpt-5.4", total: 10)
+    let inserted = try await database.importBatch(CollectionBatch(events: [first, second]))
+
+    #expect(inserted == 1)
+    let events = try await database.fetchEvents(
+      from: Date(timeIntervalSince1970: 0), to: Date().addingTimeInterval(10))
+    #expect(events.count == 1)
+    #expect(events[0].model == "gpt-5.4")
+  }
 }
 
-private func event(id: String, timestamp: Date, tool: ToolIdentifier, model: String, total: Int)
+private func event(id: String, timestamp: Date, tool: ToolIdentifier, model: String?, total: Int)
   -> UsageEvent
 {
   UsageEvent(

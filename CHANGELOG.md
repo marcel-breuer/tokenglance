@@ -9,6 +9,9 @@
 - Added a generated macOS app icon.
 - Fixed Codex imports for current `event_msg.payload.info` token-count metadata and archived session files.
 - Started background collection when the menu-bar item appears instead of waiting for the popover to open.
+- Added automatic release creation after pushes to `main`.
+- Preserved Codex model metadata from session records for token-count events.
+- Formatted chart axis labels without scientific notation.
 
 ## 0.1.1
 
