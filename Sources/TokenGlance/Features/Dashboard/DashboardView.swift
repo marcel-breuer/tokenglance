@@ -30,9 +30,12 @@ struct DashboardView: View {
       VStack(alignment: .leading, spacing: 1) {
         Text("TokenGlance")
           .font(.headline.weight(.semibold))
-        Text(lastRefreshText)
-          .font(.caption2)
-          .foregroundStyle(.secondary)
+        HStack(spacing: 6) {
+          LiveStatusDot(isRunning: dependencies.isLiveRefreshRunning)
+          Text(lastRefreshText)
+            .font(.caption2)
+            .foregroundStyle(.secondary)
+        }
       }
 
       Spacer()
@@ -307,6 +310,24 @@ private struct MetricRow: View {
       Text((value ?? 0).formatted(.number.notation(.compactName)))
         .font(.caption.monospacedDigit().weight(.semibold))
     }
+  }
+}
+
+private struct LiveStatusDot: View {
+  let isRunning: Bool
+
+  var body: some View {
+    Circle()
+      .fill(isRunning ? .green : .secondary)
+      .frame(width: 6, height: 6)
+      .overlay {
+        if isRunning {
+          Circle()
+            .stroke(.green.opacity(0.35), lineWidth: 4)
+            .scaleEffect(1.3)
+        }
+      }
+      .accessibilityLabel(isRunning ? "Live refresh running" : "Live refresh disabled")
   }
 }
 

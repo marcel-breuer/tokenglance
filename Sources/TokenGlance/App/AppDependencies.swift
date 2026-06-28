@@ -1,4 +1,5 @@
 import Foundation
+import SwiftUI
 import TokenGlanceCore
 
 @MainActor
@@ -18,7 +19,15 @@ final class AppDependencies: ObservableObject {
   @Published var selectedTool: ToolIdentifier?
   @Published var selectedModel: String?
   @Published var isRefreshing = false
+  @Published var isLiveRefreshRunning = false
   @Published var lastRefresh: Date?
+
+  private var hasStarted = false
+  private var liveRefreshTask: Task<Void, Never>?
+
+  deinit {
+    liveRefreshTask?.cancel()
+  }
 
   init() {
     collectors = [
@@ -29,12 +38,15 @@ final class AppDependencies: ObservableObject {
   }
 
   func start() {
+    guard !hasStarted else { return }
+    hasStarted = true
     Task {
       do {
         settings = try await settingsStore.load()
         selectedPeriod = settings.defaultReportingPeriod
         try await database.open()
         await refresh()
+        configureLiveRefresh()
       } catch {
         diagnosticsText = Redactor().redact(error.localizedDescription)
       }
@@ -42,6 +54,7 @@ final class AppDependencies: ObservableObject {
   }
 
   func refresh() async {
+    guard !isRefreshing else { return }
     isRefreshing = true
     defer { isRefreshing = false }
 
@@ -76,12 +89,14 @@ final class AppDependencies: ObservableObject {
     let interval = aggregator.interval(for: selectedPeriod)
     do {
       events = try await database.fetchEvents(from: interval.start, to: interval.end)
-      summary = aggregator.summarize(
+      let nextSummary = aggregator.summarize(
         events: events,
         period: selectedPeriod,
         toolFilter: selectedTool,
-        modelFilter: selectedModel
-      )
+        modelFilter: selectedModel)
+      withAnimation(.snappy(duration: 0.25)) {
+        summary = nextSummary
+      }
     } catch {
       diagnosticsText = Redactor().redact(error.localizedDescription)
     }
@@ -93,6 +108,7 @@ final class AppDependencies: ObservableObject {
   }
 
   func saveSettings() {
+    configureLiveRefresh()
     Task { try? await settingsStore.save(settings) }
   }
 
@@ -100,6 +116,30 @@ final class AppDependencies: ObservableObject {
     Task {
       try? await database.deleteAllData()
       await loadSummary()
+    }
+  }
+
+  func configureLiveRefresh() {
+    liveRefreshTask?.cancel()
+    liveRefreshTask = nil
+    isLiveRefreshRunning = false
+
+    guard settings.liveRefreshEnabled else { return }
+    isLiveRefreshRunning = true
+    let interval = max(settings.liveRefreshIntervalSeconds, 2)
+
+    liveRefreshTask = Task { [weak self] in
+      while !Task.isCancelled {
+        do {
+          try await Task.sleep(for: .seconds(interval))
+        } catch {
+          break
+        }
+        await self?.refresh()
+      }
+      await MainActor.run {
+        self?.isLiveRefreshRunning = false
+      }
     }
   }
 }

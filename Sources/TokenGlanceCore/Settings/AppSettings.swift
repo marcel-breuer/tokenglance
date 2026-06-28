@@ -39,6 +39,8 @@ public enum RetentionPeriod: String, CaseIterable, Codable, Sendable {
 public struct AppSettings: Codable, Equatable, Sendable {
   public var enabledCollectors: Set<CollectorIdentifier>
   public var refreshIntervalSeconds: TimeInterval
+  public var liveRefreshEnabled: Bool
+  public var liveRefreshIntervalSeconds: TimeInterval
   public var menuBarMetric: MenuBarMetric
   public var defaultReportingPeriod: ReportingPeriod
   public var launchAtLogin: Bool
@@ -48,6 +50,8 @@ public struct AppSettings: Codable, Equatable, Sendable {
   public init(
     enabledCollectors: Set<CollectorIdentifier> = Set(CollectorIdentifier.allCases),
     refreshIntervalSeconds: TimeInterval = 300,
+    liveRefreshEnabled: Bool = true,
+    liveRefreshIntervalSeconds: TimeInterval = 5,
     menuBarMetric: MenuBarMetric = .totalToday,
     defaultReportingPeriod: ReportingPeriod = .today,
     launchAtLogin: Bool = false,
@@ -56,11 +60,47 @@ public struct AppSettings: Codable, Equatable, Sendable {
   ) {
     self.enabledCollectors = enabledCollectors
     self.refreshIntervalSeconds = refreshIntervalSeconds
+    self.liveRefreshEnabled = liveRefreshEnabled
+    self.liveRefreshIntervalSeconds = liveRefreshIntervalSeconds
     self.menuBarMetric = menuBarMetric
     self.defaultReportingPeriod = defaultReportingPeriod
     self.launchAtLogin = launchAtLogin
     self.retentionPeriod = retentionPeriod
     self.hasCompletedOnboarding = hasCompletedOnboarding
+  }
+
+  private enum CodingKeys: String, CodingKey {
+    case enabledCollectors
+    case refreshIntervalSeconds
+    case liveRefreshEnabled
+    case liveRefreshIntervalSeconds
+    case menuBarMetric
+    case defaultReportingPeriod
+    case launchAtLogin
+    case retentionPeriod
+    case hasCompletedOnboarding
+  }
+
+  public init(from decoder: Decoder) throws {
+    let container = try decoder.container(keyedBy: CodingKeys.self)
+    self.enabledCollectors =
+      try container.decodeIfPresent(Set<CollectorIdentifier>.self, forKey: .enabledCollectors)
+      ?? Set(CollectorIdentifier.allCases)
+    self.refreshIntervalSeconds =
+      try container.decodeIfPresent(TimeInterval.self, forKey: .refreshIntervalSeconds) ?? 300
+    self.liveRefreshEnabled =
+      try container.decodeIfPresent(Bool.self, forKey: .liveRefreshEnabled) ?? true
+    self.liveRefreshIntervalSeconds =
+      try container.decodeIfPresent(TimeInterval.self, forKey: .liveRefreshIntervalSeconds) ?? 5
+    self.menuBarMetric =
+      try container.decodeIfPresent(MenuBarMetric.self, forKey: .menuBarMetric) ?? .totalToday
+    self.defaultReportingPeriod =
+      try container.decodeIfPresent(ReportingPeriod.self, forKey: .defaultReportingPeriod) ?? .today
+    self.launchAtLogin = try container.decodeIfPresent(Bool.self, forKey: .launchAtLogin) ?? false
+    self.retentionPeriod =
+      try container.decodeIfPresent(RetentionPeriod.self, forKey: .retentionPeriod) ?? .ninetyDays
+    self.hasCompletedOnboarding =
+      try container.decodeIfPresent(Bool.self, forKey: .hasCompletedOnboarding) ?? false
   }
 }
 

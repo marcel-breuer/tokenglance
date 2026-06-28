@@ -4,6 +4,8 @@ TokenGlance is a local-first native macOS menu-bar app for monitoring token usag
 
 Development screenshot: placeholder until the first public release image is captured.
 
+TokenGlance refreshes automatically by default. Counts update when supported tools write exact local token metadata; the app does not estimate usage from prompt text.
+
 ## Requirements
 
 - macOS 14 Sonoma or newer

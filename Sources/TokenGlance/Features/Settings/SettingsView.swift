@@ -38,6 +38,21 @@ struct SettingsView: View {
           }
         )
       )
+      Section("Live Updates") {
+        Toggle("Live refresh", isOn: $dependencies.settings.liveRefreshEnabled)
+        Stepper(
+          "Every \(Int(dependencies.settings.liveRefreshIntervalSeconds)) seconds",
+          value: $dependencies.settings.liveRefreshIntervalSeconds,
+          in: 2...60,
+          step: 1
+        )
+        .disabled(!dependencies.settings.liveRefreshEnabled)
+        Text(
+          "TokenGlance refreshes automatically and only counts exact metadata after a tool writes it locally."
+        )
+        .font(.caption)
+        .foregroundStyle(.secondary)
+      }
       Section("Collectors") {
         ForEach(CollectorIdentifier.allCases, id: \.self) { collector in
           Toggle(
