@@ -13,6 +13,7 @@ final class AppDependencies: ObservableObject {
   @Published var settings = AppSettings()
   @Published var events: [UsageEvent] = []
   @Published var summary: UsageSummary?
+  @Published var menuBarSummary: UsageSummary?
   @Published var diagnosticsText = ""
   @Published var collectorDiagnostics: [CollectorDiagnostic] = []
   @Published var selectedPeriod: ReportingPeriod = .today
@@ -80,6 +81,7 @@ final class AppDependencies: ObservableObject {
 
     collectorDiagnostics = diagnostics
     lastRefresh = Date()
+    await loadMenuBarSummary()
     await loadSummary()
     let report = await diagnosticsBuilder.build(database: database, collectors: collectors)
     diagnosticsText = report.text()
@@ -102,6 +104,16 @@ final class AppDependencies: ObservableObject {
     }
   }
 
+  func loadMenuBarSummary() async {
+    let interval = aggregator.interval(for: .today)
+    do {
+      let todayEvents = try await database.fetchEvents(from: interval.start, to: interval.end)
+      menuBarSummary = aggregator.summarize(events: todayEvents, period: .today)
+    } catch {
+      diagnosticsText = Redactor().redact(error.localizedDescription)
+    }
+  }
+
   func completeOnboarding() {
     settings.hasCompletedOnboarding = true
     Task { try? await settingsStore.save(settings) }
@@ -115,6 +127,7 @@ final class AppDependencies: ObservableObject {
   func deleteAllData() {
     Task {
       try? await database.deleteAllData()
+      await loadMenuBarSummary()
       await loadSummary()
     }
   }
