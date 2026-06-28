@@ -191,7 +191,19 @@ struct DashboardView: View {
         .cornerRadius(3)
       }
       .chartXAxis(.automatic)
-      .chartYAxis(.automatic)
+      .chartYAxis {
+        AxisMarks(position: .leading) { value in
+          AxisGridLine()
+          AxisTick()
+          AxisValueLabel {
+            if let tokens = value.as(Int.self) {
+              Text(TokenNumberFormat.compact(tokens))
+            } else if let tokens = value.as(Double.self) {
+              Text(TokenNumberFormat.compact(Int(tokens)))
+            }
+          }
+        }
+      }
       .frame(height: 136)
       .accessibilityIdentifier("usage-chart")
     }
@@ -329,6 +341,12 @@ private struct LiveStatusDot: View {
         }
       }
       .accessibilityLabel(isRunning ? "Live refresh running" : "Live refresh disabled")
+  }
+}
+
+private enum TokenNumberFormat {
+  static func compact(_ value: Int) -> String {
+    value.formatted(.number.notation(.compactName).precision(.fractionLength(0...1)))
   }
 }
 

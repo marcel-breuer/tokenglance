@@ -191,7 +191,27 @@ public actor UsageDatabase {
     guard sqlite3_step(statement) == SQLITE_DONE else {
       throw DatabaseError.statementFailed(message: lastError)
     }
-    return sqlite3_changes(db) > 0
+    let inserted = sqlite3_changes(db) > 0
+    if !inserted {
+      try backfillMetadata(for: event)
+    }
+    return inserted
+  }
+
+  private func backfillMetadata(for event: UsageEvent) throws {
+    guard event.model != nil else { return }
+    let statement = try prepare(
+      """
+      UPDATE usage_events
+      SET model = COALESCE(NULLIF(model, ''), ?)
+      WHERE id = ? AND (model IS NULL OR model = '')
+      """)
+    defer { sqlite3_finalize(statement) }
+    bindText(statement, 1, event.model)
+    bindText(statement, 2, event.id)
+    guard sqlite3_step(statement) == SQLITE_DONE else {
+      throw DatabaseError.statementFailed(message: lastError)
+    }
   }
 
   private func upsert(_ cursor: CollectionCursor) throws {

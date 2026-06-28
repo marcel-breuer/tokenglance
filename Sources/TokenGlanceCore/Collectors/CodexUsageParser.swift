@@ -14,8 +14,14 @@ public struct CodexUsageParser: Sendable {
     var previousCumulative: [String: TokenBreakdown] = [:]
     var events: [UsageEvent] = []
     var invalid = 0
+    var currentModel: String?
 
     for record in JSONMetadata.objects(fromJSONLines: data) {
+      let observedModel = modelIdentifier(from: record.object)
+      if let observedModel {
+        currentModel = observedModel
+      }
+
       guard let usage = usageRecord(from: record.object) else {
         invalid += 1
         continue
@@ -24,17 +30,7 @@ public struct CodexUsageParser: Sendable {
       let timestamp =
         JSONMetadata.date(record.object, keys: ["timestamp", "ts", "time", "created_at"])
         ?? importedAt
-      let model = JSONMetadata.nestedString(
-        record.object,
-        candidates: [
-          ["model"],
-          ["msg", "model"],
-          ["message", "model"],
-          ["payload", "model"],
-          ["msg", "info", "model"],
-          ["message", "info", "model"],
-          ["payload", "info", "model"],
-        ])
+      let model = observedModel ?? currentModel
       let sessionID = JSONMetadata.nestedString(
         record.object,
         candidates: [
@@ -89,6 +85,21 @@ public struct CodexUsageParser: Sendable {
       importedRecords: events.count,
       invalidRecords: invalid
     )
+  }
+
+  private func modelIdentifier(from object: [String: Any]) -> String? {
+    JSONMetadata.nestedString(
+      object,
+      candidates: [
+        ["model"],
+        ["msg", "model"],
+        ["message", "model"],
+        ["payload", "model"],
+        ["msg", "info", "model"],
+        ["message", "info", "model"],
+        ["payload", "info", "model"],
+        ["payload", "collaboration_mode", "settings", "model"],
+      ])
   }
 
   private enum UsageKind {
