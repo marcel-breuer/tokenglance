@@ -1,14 +1,30 @@
 import Foundation
 
 public struct CommandLineToolDetector: Sendable {
-  public init() {}
+  private let pathOverride: String?
+
+  public init(pathOverride: String? = nil) {
+    self.pathOverride = pathOverride
+  }
 
   public func locate(_ executable: String) -> String? {
-    let paths =
-      (ProcessInfo.processInfo.environment["PATH"]
-      ?? "/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin")
+    let environmentPaths =
+      (pathOverride ?? ProcessInfo.processInfo.environment["PATH"] ?? "")
       .split(separator: ":")
       .map(String.init)
+    let fallbackPaths = [
+      "/opt/homebrew/bin",
+      "/opt/homebrew/sbin",
+      "/usr/local/bin",
+      "/usr/local/sbin",
+      "/usr/bin",
+      "/bin",
+      "/usr/sbin",
+      "/sbin",
+    ]
+    let paths = Array(
+      OrderedSet(environmentPaths + fallbackPaths)
+    )
 
     for path in paths {
       let candidate = URL(fileURLWithPath: path).appendingPathComponent(executable).path
@@ -40,5 +56,18 @@ public struct CommandLineToolDetector: Sendable {
     } catch {
       return nil
     }
+  }
+}
+
+private struct OrderedSet<Element: Hashable>: Sequence {
+  private let values: [Element]
+
+  init(_ input: [Element]) {
+    var seen = Set<Element>()
+    values = input.filter { seen.insert($0).inserted }
+  }
+
+  func makeIterator() -> Array<Element>.Iterator {
+    values.makeIterator()
   }
 }

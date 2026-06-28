@@ -35,17 +35,23 @@ Data is stored under:
 Homebrew personal tap:
 
 ```bash
-brew install --cask --no-quarantine marcel-breuer/tap/tokenglance
+brew install --cask marcel-breuer/tap/tokenglance
 ```
 
 Two-step form:
 
 ```bash
 brew tap marcel-breuer/tap
-brew install --cask --no-quarantine tokenglance
+brew install --cask tokenglance
 ```
 
-TokenGlance is not distributed through the Mac App Store, is not signed with an Apple Developer ID, and is not notarized by Apple. Do not globally disable Gatekeeper. Verify the published SHA-256 checksum before installing.
+TokenGlance is not distributed through the Mac App Store, is not signed with an Apple Developer ID, and is not notarized by Apple. Homebrew 6 no longer accepts the old `--no-quarantine` install option. If macOS blocks the first launch, approve TokenGlance in System Settings > Privacy & Security or remove the quarantine attribute for this app only:
+
+```bash
+xattr -dr com.apple.quarantine /Applications/TokenGlance.app
+```
+
+Do not globally disable Gatekeeper. Verify the published SHA-256 checksum before installing.
 
 Manual installation:
 
@@ -60,7 +66,7 @@ Manual installation:
 ```bash
 swift build
 swift test
-./scripts/package-release.sh 0.1.0
+./scripts/package-release.sh 0.1.1
 ```
 
 Docker is preferred when available, but this repository is a native macOS app and requires the local macOS SDK/Xcode toolchain for build, test, and packaging.
@@ -70,14 +76,14 @@ Docker is preferred when available, but this repository is a native macOS app an
 The release script builds an optimized ARM64 app, applies an ad-hoc signature, verifies the app bundle, creates a ZIP, and writes a SHA-256 checksum:
 
 ```bash
-./scripts/package-release.sh 0.1.0
+./scripts/package-release.sh 0.1.1
 ```
 
 Artifacts:
 
 - `dist/TokenGlance.app`
-- `dist/TokenGlance-0.1.0-arm64.zip`
-- `dist/TokenGlance-0.1.0-arm64.zip.sha256`
+- `dist/TokenGlance-0.1.1-arm64.zip`
+- `dist/TokenGlance-0.1.1-arm64.zip.sha256`
 
 ## Export And Deletion
 
@@ -92,4 +98,3 @@ TokenGlance supports CSV and JSON export of normalized usage metadata only. Dele
 ## License
 
 MIT
-
