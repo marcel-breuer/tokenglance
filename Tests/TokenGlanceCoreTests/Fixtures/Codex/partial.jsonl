@@ -1,0 +1,3 @@
+{"type":"token_count","timestamp":"2026-06-28T10:00:00Z","model":"gpt-5","session_id":"session-a","last_token_usage":{"input_tokens":5,"output_tokens":7}}
+{"type":"token_count","timestamp":"2026-06-28T10:01:00Z","model":"gpt-5","session_id":"session-a","last_token_usage":{"input_tokens":5
+{"type":"message","text":"SYNTHETIC_SECRET_PROMPT_SHOULD_NOT_APPEAR","timestamp":"2026-06-28T10:02:00Z"}

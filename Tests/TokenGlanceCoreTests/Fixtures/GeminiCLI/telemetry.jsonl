@@ -1,0 +1,1 @@
+{"name":"gemini_cli.api_response","timestamp":"2026-06-28T10:00:00Z","attributes":{"model":"gemini-3-pro","session_id":"gemini-session","input_token_count":100,"output_token_count":40,"cached_content_token_count":15,"thoughts_token_count":7,"tool_token_count":3,"total_token_count":165}}

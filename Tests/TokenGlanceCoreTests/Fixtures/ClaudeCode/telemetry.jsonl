@@ -1,0 +1,1 @@
+{"name":"claude_code.token.usage","timestamp":"2026-06-28T10:00:00Z","attributes":{"model":"claude-sonnet-4-5","session_id":"claude-session","input_tokens":80,"output_tokens":30,"cache_read_input_tokens":12,"cache_creation_input_tokens":6}}

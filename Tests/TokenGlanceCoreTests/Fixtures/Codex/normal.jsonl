@@ -1,0 +1,2 @@
+{"type":"token_count","timestamp":"2026-06-28T10:00:00Z","model":"gpt-5","session_id":"session-a","last_token_usage":{"input_tokens":100,"cached_input_tokens":20,"output_tokens":50,"reasoning_output_tokens":10,"total_tokens":160}}
+{"type":"token_count","timestamp":"2026-06-28T11:00:00Z","model":"gpt-5","session_id":"session-a","last_token_usage":{"input_tokens":60,"cached_input_tokens":10,"output_tokens":40,"reasoning_output_tokens":5,"total_tokens":105}}

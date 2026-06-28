@@ -1,0 +1,29 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*.*.*"
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8
+        with:
+          ref: ${{ github.ref }}
+      - name: Package ARM64 app
+        run: ./scripts/package-release.sh "${GITHUB_REF_NAME#v}"
+      - name: Create GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          VERSION="${GITHUB_REF_NAME#v}"
+          gh release create "$GITHUB_REF_NAME" \
+            "dist/TokenGlance-${VERSION}-arm64.zip" \
+            "dist/TokenGlance-${VERSION}-arm64.zip.sha256" \
+            --notes-file CHANGELOG.md
+
