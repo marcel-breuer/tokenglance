@@ -7,3 +7,10 @@
 | Antigravity | `agy --version` | Not yet | Not yet | Not yet verified | Unavailable until a documented local token metadata source is verified | Yes |
 
 TokenGlance detects Antigravity safely but does not read Antigravity conversations, logs, browser-style storage, or credentials until a documented local token metadata source is verified.
+
+Codex collection scans only local `.jsonl` files under:
+
+```text
+~/.codex/sessions/
+~/.codex/archived_sessions/
+```

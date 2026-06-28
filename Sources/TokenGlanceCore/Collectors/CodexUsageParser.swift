@@ -1,7 +1,7 @@
 import Foundation
 
 public struct CodexUsageParser: Sendable {
-  public static let parserVersion = "codex-jsonl-token-count-v1"
+  public static let parserVersion = "codex-jsonl-token-count-v2"
 
   public init() {}
 
@@ -31,6 +31,9 @@ public struct CodexUsageParser: Sendable {
           ["msg", "model"],
           ["message", "model"],
           ["payload", "model"],
+          ["msg", "info", "model"],
+          ["message", "info", "model"],
+          ["payload", "info", "model"],
         ])
       let sessionID = JSONMetadata.nestedString(
         record.object,
@@ -40,6 +43,10 @@ public struct CodexUsageParser: Sendable {
           ["thread_id"],
           ["msg", "session_id"],
           ["message", "session_id"],
+          ["payload", "session_id"],
+          ["msg", "info", "session_id"],
+          ["message", "info", "session_id"],
+          ["payload", "info", "session_id"],
         ])
 
       let key = [sessionID ?? "session", model ?? "model", sourceFingerprint].joined(separator: "|")
@@ -102,32 +109,58 @@ public struct CodexUsageParser: Sendable {
         ["msg", "type"],
         ["message", "type"],
         ["event", "type"],
+        ["payload", "type"],
       ])
 
-    let topLevelUsage = ["usage", "token_usage", "last_token_usage"].compactMap {
-      object[$0] as? [String: Any]
-    }.first
-    let msgUsage =
-      JSONMetadata.dictionary(object, at: ["msg", "last_token_usage"])
-      ?? JSONMetadata.dictionary(object, at: ["message", "last_token_usage"])
-      ?? JSONMetadata.dictionary(object, at: ["payload", "last_token_usage"])
-    let cumulativeUsage =
-      JSONMetadata.dictionary(object, at: ["total_token_usage"])
-      ?? JSONMetadata.dictionary(object, at: ["msg", "total_token_usage"])
-      ?? JSONMetadata.dictionary(object, at: ["message", "total_token_usage"])
-      ?? JSONMetadata.dictionary(object, at: ["payload", "total_token_usage"])
+    let perTurnUsage = firstDictionary(
+      in: object,
+      paths: [
+        ["last_token_usage"],
+        ["usage"],
+        ["token_usage"],
+        ["msg", "last_token_usage"],
+        ["message", "last_token_usage"],
+        ["payload", "last_token_usage"],
+        ["event", "last_token_usage"],
+        ["msg", "info", "last_token_usage"],
+        ["message", "info", "last_token_usage"],
+        ["payload", "info", "last_token_usage"],
+        ["event", "info", "last_token_usage"],
+      ])
+    let cumulativeUsage = firstDictionary(
+      in: object,
+      paths: [
+        ["total_token_usage"],
+        ["msg", "total_token_usage"],
+        ["message", "total_token_usage"],
+        ["payload", "total_token_usage"],
+        ["event", "total_token_usage"],
+        ["msg", "info", "total_token_usage"],
+        ["message", "info", "total_token_usage"],
+        ["payload", "info", "total_token_usage"],
+        ["event", "info", "total_token_usage"],
+      ])
 
     if let cumulativeUsage, let tokens = tokens(from: cumulativeUsage) {
       return ParsedUsage(kind: .cumulative, tokens: tokens)
     }
 
-    if type == "token_count" || topLevelUsage != nil || msgUsage != nil {
-      let source = msgUsage ?? topLevelUsage ?? object
+    if type == "token_count" || perTurnUsage != nil {
+      let source = perTurnUsage ?? object
       if let tokens = tokens(from: source) {
         return ParsedUsage(kind: .perTurn, tokens: tokens)
       }
     }
 
+    return nil
+  }
+
+  private func firstDictionary(in object: [String: Any], paths: [[String]]) -> [String: Any]? {
+    for path in paths {
+      if let dictionary = JSONMetadata.dictionary(object, at: path) {
+        return dictionary
+      }
+    }
     return nil
   }
 

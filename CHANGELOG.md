@@ -7,6 +7,8 @@
 - Added automatic live refresh so exact local token metadata is imported without pressing refresh manually.
 - Replaced Gemini CLI detection with Antigravity CLI detection through `agy`.
 - Added a generated macOS app icon.
+- Fixed Codex imports for current `event_msg.payload.info` token-count metadata and archived session files.
+- Started background collection when the menu-bar item appears instead of waiting for the popover to open.
 
 ## 0.1.1
 

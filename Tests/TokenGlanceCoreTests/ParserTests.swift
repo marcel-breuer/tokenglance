@@ -26,6 +26,19 @@ struct ParserTests {
     #expect(batch.events[1].tokens.inputTokens == 30)
   }
 
+  @Test("Codex parser reads nested payload info token metadata")
+  func codexPayloadInfo() throws {
+    let data = try fixture("Codex/payload-info.jsonl")
+    let batch = CodexUsageParser().parseJSONLines(data, sourceFingerprint: "source")
+    #expect(batch.events.count == 2)
+    #expect(batch.invalidRecords == 1)
+    #expect(batch.events[0].tokens.inputTokens == 100)
+    #expect(batch.events[0].tokens.cachedInputTokens == 20)
+    #expect(batch.events[0].tokens.reasoningTokens == 10)
+    #expect(batch.events[1].tokens.totalTokens == 100)
+    #expect(batch.events[1].tokens.inputTokens == 60)
+  }
+
   @Test("Codex parser ignores partial JSON and does not persist text fields")
   func codexPartialPrivacy() throws {
     let data = try fixture("Codex/partial.jsonl")
