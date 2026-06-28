@@ -94,6 +94,11 @@ Artifacts:
 - `dist/TokenGlance-0.1.1-arm64.zip`
 - `dist/TokenGlance-0.1.1-arm64.zip.sha256`
 
+The GitHub release workflow updates the Homebrew cask after creating the release.
+Configure `HOMEBREW_TAP_TOKEN` as a repository secret with write access to the tap
+repository. The workflow defaults to `marcel-breuer/homebrew-tap`; set the
+repository variable `HOMEBREW_TAP_REPOSITORY` to override it.
+
 ## Export And Deletion
 
 TokenGlance supports CSV and JSON export of normalized usage metadata only. Deleting local usage data removes TokenGlance’s database records and collector cursors; it never modifies source files belonging to external tools.

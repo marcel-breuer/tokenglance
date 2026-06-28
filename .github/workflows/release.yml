@@ -23,6 +23,16 @@ jobs:
       - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8
         with:
           fetch-depth: 0
+      - name: Validate Homebrew tap access
+        env:
+          HOMEBREW_TAP_REPOSITORY: ${{ vars.HOMEBREW_TAP_REPOSITORY || 'marcel-breuer/homebrew-tap' }}
+          HOMEBREW_TAP_TOKEN: ${{ secrets.HOMEBREW_TAP_TOKEN }}
+        run: |
+          if [[ -z "$HOMEBREW_TAP_TOKEN" ]]; then
+            echo "HOMEBREW_TAP_TOKEN must be set to update ${HOMEBREW_TAP_REPOSITORY}." >&2
+            exit 1
+          fi
+          git ls-remote "https://x-access-token:${HOMEBREW_TAP_TOKEN}@github.com/${HOMEBREW_TAP_REPOSITORY}.git" HEAD >/dev/null
       - name: Resolve release version
         env:
           GH_TOKEN: ${{ github.token }}
@@ -60,6 +70,15 @@ jobs:
           echo "TAG=$TAG" >> "$GITHUB_ENV"
       - name: Package ARM64 app
         run: ./scripts/package-release.sh "$VERSION"
+      - name: Resolve Homebrew cask checksum
+        id: cask
+        run: |
+          SHA="$(awk '{print $1}' "dist/TokenGlance-${VERSION}-arm64.zip.sha256")"
+          if [[ ! "$SHA" =~ ^[0-9a-f]{64}$ ]]; then
+            echo "Invalid SHA-256 checksum: $SHA" >&2
+            exit 1
+          fi
+          echo "sha=$SHA" >> "$GITHUB_OUTPUT"
       - name: Create GitHub Release
         env:
           GH_TOKEN: ${{ github.token }}
@@ -68,3 +87,32 @@ jobs:
             "dist/TokenGlance-${VERSION}-arm64.zip" \
             "dist/TokenGlance-${VERSION}-arm64.zip.sha256" \
             --notes-file CHANGELOG.md
+      - name: Update Homebrew tap
+        env:
+          HOMEBREW_TAP_REPOSITORY: ${{ vars.HOMEBREW_TAP_REPOSITORY || 'marcel-breuer/homebrew-tap' }}
+          HOMEBREW_TAP_TOKEN: ${{ secrets.HOMEBREW_TAP_TOKEN }}
+          SHA: ${{ steps.cask.outputs.sha }}
+        run: |
+          if [[ -z "$HOMEBREW_TAP_TOKEN" ]]; then
+            echo "HOMEBREW_TAP_TOKEN must be set to update ${HOMEBREW_TAP_REPOSITORY}." >&2
+            exit 1
+          fi
+
+          TAP_DIR="$(mktemp -d)"
+          git clone "https://x-access-token:${HOMEBREW_TAP_TOKEN}@github.com/${HOMEBREW_TAP_REPOSITORY}.git" "$TAP_DIR"
+
+          mkdir -p "$TAP_DIR/Casks"
+          cp Casks/tokenglance.rb "$TAP_DIR/Casks/tokenglance.rb"
+          CASK_PATH="$TAP_DIR/Casks/tokenglance.rb" ./scripts/update-cask-sha.sh "$VERSION" "$SHA"
+
+          git -C "$TAP_DIR" config user.name "github-actions[bot]"
+          git -C "$TAP_DIR" config user.email "github-actions[bot]@users.noreply.github.com"
+          git -C "$TAP_DIR" add Casks/tokenglance.rb
+
+          if git -C "$TAP_DIR" diff --cached --quiet; then
+            echo "Homebrew tap already has TokenGlance ${VERSION}."
+            exit 0
+          fi
+
+          git -C "$TAP_DIR" commit -m "chore(cask): update tokenglance to ${VERSION}"
+          git -C "$TAP_DIR" push origin HEAD

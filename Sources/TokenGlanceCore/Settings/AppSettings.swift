@@ -1,5 +1,28 @@
 import Foundation
 
+public enum AppLanguage: String, CaseIterable, Codable, Sendable {
+  case system
+  case german
+  case english
+
+  public var resolved: ResolvedAppLanguage {
+    switch self {
+    case .system:
+      let preferredLanguage = Locale.preferredLanguages.first?.lowercased() ?? ""
+      return preferredLanguage.hasPrefix("de") ? .german : .english
+    case .german:
+      return .german
+    case .english:
+      return .english
+    }
+  }
+}
+
+public enum ResolvedAppLanguage: Sendable {
+  case german
+  case english
+}
+
 public enum MenuBarMetric: String, CaseIterable, Codable, Sendable {
   case totalToday
   case lastHour
@@ -15,6 +38,10 @@ public enum MenuBarMetric: String, CaseIterable, Codable, Sendable {
     case .outputToday: "Output Tokens Today"
     case .iconOnly: "Icon Only"
     }
+  }
+
+  public static var selectableCases: [MenuBarMetric] {
+    [.totalToday, .lastHour, .inputToday, .outputToday, .iconOnly]
   }
 }
 
@@ -45,6 +72,7 @@ public struct AppSettings: Codable, Equatable, Sendable {
   public var defaultReportingPeriod: ReportingPeriod
   public var launchAtLogin: Bool
   public var retentionPeriod: RetentionPeriod
+  public var language: AppLanguage
   public var hasCompletedOnboarding: Bool
 
   public init(
@@ -56,6 +84,7 @@ public struct AppSettings: Codable, Equatable, Sendable {
     defaultReportingPeriod: ReportingPeriod = .today,
     launchAtLogin: Bool = false,
     retentionPeriod: RetentionPeriod = .ninetyDays,
+    language: AppLanguage = .system,
     hasCompletedOnboarding: Bool = false
   ) {
     self.enabledCollectors = enabledCollectors
@@ -66,6 +95,7 @@ public struct AppSettings: Codable, Equatable, Sendable {
     self.defaultReportingPeriod = defaultReportingPeriod
     self.launchAtLogin = launchAtLogin
     self.retentionPeriod = retentionPeriod
+    self.language = language
     self.hasCompletedOnboarding = hasCompletedOnboarding
   }
 
@@ -78,6 +108,7 @@ public struct AppSettings: Codable, Equatable, Sendable {
     case defaultReportingPeriod
     case launchAtLogin
     case retentionPeriod
+    case language
     case hasCompletedOnboarding
   }
 
@@ -99,6 +130,7 @@ public struct AppSettings: Codable, Equatable, Sendable {
     self.launchAtLogin = try container.decodeIfPresent(Bool.self, forKey: .launchAtLogin) ?? false
     self.retentionPeriod =
       try container.decodeIfPresent(RetentionPeriod.self, forKey: .retentionPeriod) ?? .ninetyDays
+    self.language = try container.decodeIfPresent(AppLanguage.self, forKey: .language) ?? .system
     self.hasCompletedOnboarding =
       try container.decodeIfPresent(Bool.self, forKey: .hasCompletedOnboarding) ?? false
   }

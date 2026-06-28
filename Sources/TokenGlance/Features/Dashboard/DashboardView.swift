@@ -5,6 +5,7 @@ import TokenGlanceCore
 struct DashboardView: View {
   @EnvironmentObject private var dependencies: AppDependencies
   @State private var mode: DashboardMode = .overview
+  private var strings: AppStrings { AppStrings(dependencies.settings.language) }
 
   var body: some View {
     VStack(spacing: 0) {
@@ -31,7 +32,7 @@ struct DashboardView: View {
         Text("TokenGlance")
           .font(.headline.weight(.semibold))
         HStack(spacing: 6) {
-          LiveStatusDot(isRunning: dependencies.isLiveRefreshRunning)
+          LiveStatusDot(isRunning: dependencies.isLiveRefreshRunning, strings: strings)
           Text(lastRefreshText)
             .font(.caption2)
             .foregroundStyle(.secondary)
@@ -40,7 +41,7 @@ struct DashboardView: View {
 
       Spacer()
 
-      Picker("View", selection: $mode) {
+      Picker(strings.view, selection: $mode) {
         ForEach(DashboardMode.allCases) { mode in
           Image(systemName: mode.symbol).tag(mode)
         }
@@ -57,7 +58,7 @@ struct DashboardView: View {
           systemName: dependencies.isRefreshing ? "arrow.triangle.2.circlepath" : "arrow.clockwise")
       }
       .buttonStyle(.borderless)
-      .help("Refresh")
+      .help(strings.refresh)
       .accessibilityIdentifier("refresh-button")
     }
     .padding(.horizontal, 14)
@@ -93,9 +94,9 @@ struct DashboardView: View {
 
   private var periodStrip: some View {
     VStack(spacing: 8) {
-      Picker("Period", selection: $dependencies.selectedPeriod) {
+      Picker(strings.period, selection: $dependencies.selectedPeriod) {
         ForEach(ReportingPeriod.allCases, id: \.self) { period in
-          Text(period.displayName).tag(period)
+          Text(period.localizedName(using: strings)).tag(period)
         }
       }
       .pickerStyle(.segmented)
@@ -105,7 +106,7 @@ struct DashboardView: View {
 
       HStack(spacing: 8) {
         Picker(
-          "Tool",
+          strings.tool,
           selection: Binding(
             get: { dependencies.selectedTool },
             set: {
@@ -114,14 +115,14 @@ struct DashboardView: View {
             }
           )
         ) {
-          Text("All tools").tag(Optional<ToolIdentifier>.none)
+          Text(strings.allTools).tag(Optional<ToolIdentifier>.none)
           Text("Codex").tag(Optional(ToolIdentifier.codexCLI))
           Text("Claude").tag(Optional(ToolIdentifier.claudeCode))
           Text("Antigravity").tag(Optional(ToolIdentifier.antigravity))
         }
 
         Picker(
-          "Model",
+          strings.model,
           selection: Binding(
             get: { dependencies.selectedModel },
             set: {
@@ -130,7 +131,7 @@ struct DashboardView: View {
             }
           )
         ) {
-          Text("All models").tag(Optional<String>.none)
+          Text(strings.allModels).tag(Optional<String>.none)
           ForEach(Array(Set(dependencies.events.compactMap(\.model))).sorted(), id: \.self) {
             model in
             Text(model).tag(Optional(model))
@@ -153,7 +154,7 @@ struct DashboardView: View {
         VStack(spacing: 0) {
           Text(totals.calculatedTotal.formatted(.number.notation(.compactName)))
             .font(.title3.monospacedDigit().weight(.semibold))
-          Text("tokens")
+          Text(strings.tokens)
             .font(.caption2)
             .foregroundStyle(.secondary)
         }
@@ -161,10 +162,10 @@ struct DashboardView: View {
       .frame(width: 96, height: 96)
 
       VStack(spacing: 8) {
-        MetricRow(label: "Input", value: totals.inputTokens, color: .blue)
-        MetricRow(label: "Output", value: totals.outputTokens, color: .green)
-        MetricRow(label: "Cached", value: totals.cachedInputTokens, color: .purple)
-        MetricRow(label: "Reasoning", value: totals.reasoningTokens, color: .orange)
+        MetricRow(label: strings.input, value: totals.inputTokens, color: .blue)
+        MetricRow(label: strings.output, value: totals.outputTokens, color: .green)
+        MetricRow(label: strings.cached, value: totals.cachedInputTokens, color: .purple)
+        MetricRow(label: strings.reasoning, value: totals.reasoningTokens, color: .orange)
       }
     }
     .padding(12)
@@ -174,18 +175,18 @@ struct DashboardView: View {
   private var usageChart: some View {
     VStack(alignment: .leading, spacing: 8) {
       HStack {
-        Label("Usage", systemImage: "waveform.path.ecg")
+        Label(strings.usage, systemImage: "waveform.path.ecg")
           .font(.headline)
         Spacer()
-        Text(dependencies.summary?.accuracy.rawValue ?? UsageAccuracy.unavailable.rawValue)
+        Text((dependencies.summary?.accuracy ?? .unavailable).localizedName(using: strings))
           .font(.caption2)
           .foregroundStyle(.secondary)
       }
 
       Chart(dependencies.summary?.buckets ?? []) { bucket in
         BarMark(
-          x: .value("Time", bucket.start),
-          y: .value("Tokens", bucket.tokens.calculatedTotal)
+          x: .value(strings.chartTime, bucket.start),
+          y: .value(strings.chartTokens, bucket.tokens.calculatedTotal)
         )
         .foregroundStyle(Color.accentColor.gradient)
         .cornerRadius(3)
@@ -213,7 +214,7 @@ struct DashboardView: View {
 
   private var collectorModules: some View {
     VStack(alignment: .leading, spacing: 8) {
-      Label("Collectors", systemImage: "dot.radiowaves.left.and.right")
+      Label(strings.collectors, systemImage: "dot.radiowaves.left.and.right")
         .font(.headline)
 
       ForEach(CollectorIdentifier.allCases, id: \.self) { identifier in
@@ -221,8 +222,9 @@ struct DashboardView: View {
         CollectorModuleRow(
           name: identifier.displayName,
           status: diagnostic?.status ?? .sourceUnavailable,
-          detail: diagnostic?.detectedVersion ?? "not detected",
-          explanation: diagnostic?.explanation ?? "No diagnostic has been collected yet."
+          statusText: (diagnostic?.status ?? .sourceUnavailable).localizedName(using: strings),
+          detail: diagnostic?.detectedVersion ?? strings.notDetected,
+          explanation: diagnostic?.explanation ?? strings.noDiagnostic
         )
       }
     }
@@ -233,16 +235,18 @@ struct DashboardView: View {
   private var breakdownColumns: some View {
     HStack(alignment: .top, spacing: 10) {
       BreakdownList(
-        title: "Tools",
+        title: strings.tools,
         symbol: "hammer",
         rows: (dependencies.summary?.byTool ?? [:]).map {
           ($0.key.rawValue, $0.value.calculatedTotal)
-        }
+        },
+        strings: strings
       )
       BreakdownList(
-        title: "Models",
+        title: strings.models,
         symbol: "cpu",
-        rows: (dependencies.summary?.byModel ?? [:]).map { ($0.key, $0.value.calculatedTotal) }
+        rows: (dependencies.summary?.byModel ?? [:]).map { ($0.key, $0.value.calculatedTotal) },
+        strings: strings
       )
     }
   }
@@ -250,14 +254,14 @@ struct DashboardView: View {
   private var diagnostics: some View {
     VStack(alignment: .leading, spacing: 10) {
       HStack {
-        Label("Diagnostics", systemImage: "stethoscope")
+        Label(strings.diagnostics, systemImage: "stethoscope")
           .font(.headline)
         Spacer()
         Button {
           NSPasteboard.general.clearContents()
           NSPasteboard.general.setString(dependencies.diagnosticsText, forType: .string)
         } label: {
-          Label("Copy", systemImage: "doc.on.doc")
+          Label(strings.copy, systemImage: "doc.on.doc")
         }
         .accessibilityIdentifier("copy-diagnostics-button")
       }
@@ -265,7 +269,7 @@ struct DashboardView: View {
       ScrollView {
         Text(
           dependencies.diagnosticsText.isEmpty
-            ? "Diagnostics are not available yet." : dependencies.diagnosticsText
+            ? strings.diagnosticsUnavailable : dependencies.diagnosticsText
         )
         .font(.system(.caption, design: .monospaced))
         .frame(maxWidth: .infinity, alignment: .leading)
@@ -285,8 +289,8 @@ struct DashboardView: View {
   }
 
   private var lastRefreshText: String {
-    guard let date = dependencies.lastRefresh else { return "Not refreshed yet" }
-    return "Last refresh \(date.formatted(date: .omitted, time: .shortened))"
+    guard let date = dependencies.lastRefresh else { return strings.notRefreshedYet }
+    return strings.lastRefresh(date)
   }
 }
 
@@ -328,6 +332,7 @@ private struct MetricRow: View {
 
 private struct LiveStatusDot: View {
   let isRunning: Bool
+  let strings: AppStrings
 
   var body: some View {
     Circle()
@@ -340,7 +345,7 @@ private struct LiveStatusDot: View {
             .scaleEffect(1.3)
         }
       }
-      .accessibilityLabel(isRunning ? "Live refresh running" : "Live refresh disabled")
+      .accessibilityLabel(isRunning ? strings.liveRefreshRunning : strings.liveRefreshDisabled)
   }
 }
 
@@ -353,6 +358,7 @@ private enum TokenNumberFormat {
 private struct CollectorModuleRow: View {
   let name: String
   let status: CollectorStatus
+  let statusText: String
   let detail: String
   let explanation: String
 
@@ -371,7 +377,7 @@ private struct CollectorModuleRow: View {
       }
       Spacer()
       VStack(alignment: .trailing, spacing: 1) {
-        Text(status.rawValue)
+        Text(statusText)
           .font(.caption2.monospaced())
         Text(detail)
           .font(.caption2)
@@ -395,13 +401,14 @@ private struct BreakdownList: View {
   let title: String
   let symbol: String
   let rows: [(String, Int)]
+  let strings: AppStrings
 
   var body: some View {
     VStack(alignment: .leading, spacing: 7) {
       Label(title, systemImage: symbol)
         .font(.headline)
       if rows.isEmpty {
-        Text("No exact usage")
+        Text(strings.noExactUsage)
           .foregroundStyle(.secondary)
           .font(.caption)
       } else {

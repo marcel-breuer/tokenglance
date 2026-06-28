@@ -4,26 +4,32 @@ import TokenGlanceCore
 
 struct SettingsView: View {
   @EnvironmentObject private var dependencies: AppDependencies
+  private var strings: AppStrings { AppStrings(dependencies.settings.language) }
 
   var body: some View {
     Form {
-      Picker("Menu bar metric", selection: $dependencies.settings.menuBarMetric) {
-        ForEach(MenuBarMetric.allCases, id: \.self) { metric in
-          Text(metric.displayName).tag(metric)
+      Picker(strings.languageSetting, selection: $dependencies.settings.language) {
+        ForEach(AppLanguage.allCases, id: \.self) { language in
+          Text(language.localizedName(using: strings)).tag(language)
         }
       }
-      Picker("Default period", selection: $dependencies.settings.defaultReportingPeriod) {
+      Picker(strings.menuBarMetric, selection: $dependencies.settings.menuBarMetric) {
+        ForEach(MenuBarMetric.selectableCases, id: \.self) { metric in
+          Text(metric.localizedName(using: strings)).tag(metric)
+        }
+      }
+      Picker(strings.defaultPeriod, selection: $dependencies.settings.defaultReportingPeriod) {
         ForEach(ReportingPeriod.allCases, id: \.self) { period in
-          Text(period.displayName).tag(period)
+          Text(period.localizedName(using: strings)).tag(period)
         }
       }
-      Picker("Retention", selection: $dependencies.settings.retentionPeriod) {
+      Picker(strings.retention, selection: $dependencies.settings.retentionPeriod) {
         ForEach(RetentionPeriod.allCases, id: \.self) { period in
-          Text(period.rawValue).tag(period)
+          Text(period.localizedName(using: strings)).tag(period)
         }
       }
       Toggle(
-        "Launch at login",
+        strings.launchAtLogin,
         isOn: Binding(
           get: { dependencies.settings.launchAtLogin },
           set: { enabled in
@@ -38,22 +44,20 @@ struct SettingsView: View {
           }
         )
       )
-      Section("Live Updates") {
-        Toggle("Live refresh", isOn: $dependencies.settings.liveRefreshEnabled)
+      Section(strings.liveUpdates) {
+        Toggle(strings.liveRefresh, isOn: $dependencies.settings.liveRefreshEnabled)
         Stepper(
-          "Every \(Int(dependencies.settings.liveRefreshIntervalSeconds)) seconds",
+          strings.everySeconds(Int(dependencies.settings.liveRefreshIntervalSeconds)),
           value: $dependencies.settings.liveRefreshIntervalSeconds,
           in: 2...60,
           step: 1
         )
         .disabled(!dependencies.settings.liveRefreshEnabled)
-        Text(
-          "TokenGlance refreshes automatically and only counts exact metadata after a tool writes it locally."
-        )
-        .font(.caption)
-        .foregroundStyle(.secondary)
+        Text(strings.autoRefreshDescription)
+          .font(.caption)
+          .foregroundStyle(.secondary)
       }
-      Section("Collectors") {
+      Section(strings.collectors) {
         ForEach(CollectorIdentifier.allCases, id: \.self) { collector in
           Toggle(
             collector.displayName,
@@ -70,11 +74,11 @@ struct SettingsView: View {
             ))
         }
       }
-      Section("Data") {
-        Button("Delete all local usage data", role: .destructive) {
+      Section(strings.data) {
+        Button(strings.deleteAllLocalUsageData, role: .destructive) {
           dependencies.deleteAllData()
         }
-        Text("Data is stored under ~/Library/Application Support/TokenGlance.")
+        Text(strings.dataStoredUnder)
           .font(.caption)
           .foregroundStyle(.secondary)
       }
