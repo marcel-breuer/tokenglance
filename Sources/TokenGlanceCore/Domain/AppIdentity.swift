@@ -5,7 +5,7 @@ public enum AppIdentity {
   public static let executableName = "TokenGlance"
   public static let bundleIdentifier = "dev.marcelbreuer.tokenglance"
   public static let repository = "marcel-breuer/tokenglance"
-  public static let homebrewTap = "marcel-breuer/homebrew-tap"
+  public static let homebrewTap = "marcel-breuer/tap"
   public static let homebrewCaskToken = "tokenglance"
   public static var version: String {
     Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "0.1.1"
