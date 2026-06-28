@@ -1,6 +1,6 @@
 cask "tokenglance" do
   version "0.1.1"
-  sha256 "698730c512c1b04f4193cfe79f8cae2d28ebde75743791bb7f8481ef2e6534ce"
+  sha256 "c88c2c988631effd2b2ad0b62567c309909a8260adfd720540450c1b684c2281"
 
   url "https://github.com/marcel-breuer/tokenglance/releases/download/v#{version}/TokenGlance-#{version}-arm64.zip"
   name "TokenGlance"
