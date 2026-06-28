@@ -22,6 +22,13 @@ TokenGlance refreshes automatically by default. Counts update when supported too
 
 Antigravity replaces Gemini CLI detection because the standalone Gemini CLI is no longer assumed to be available. TokenGlance detects Antigravity safely but does not read Antigravity conversations, logs, browser-style storage, or credentials until a documented local token metadata source is verified.
 
+Codex usage is imported from local token-count metadata in:
+
+```text
+~/.codex/sessions/
+~/.codex/archived_sessions/
+```
+
 ## Privacy
 
 All processing is local. TokenGlance does not upload usage data and does not read credentials, browser data, shell history, clipboard contents, prompts, responses, source code, or private provider APIs. Raw content encountered near metadata is discarded and never persisted.

@@ -17,6 +17,9 @@ struct TokenGlanceApp: App {
         }
     } label: {
       MenuBarLabel(summary: dependencies.summary, metric: dependencies.settings.menuBarMetric)
+        .task {
+          dependencies.start()
+        }
     }
     .menuBarExtraStyle(.window)
 

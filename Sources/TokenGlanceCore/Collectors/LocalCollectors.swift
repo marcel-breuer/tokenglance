@@ -16,17 +16,34 @@ public struct CodexCLICollector: UsageCollector {
   ]
 
   private let detector: CommandLineToolDetector
-  private let sourceDirectory: URL
+  private let sourceDirectories: [URL]
   private let parser: CodexUsageParser
+
+  public static var defaultSourceDirectories: [URL] {
+    let home = FileManager.default.homeDirectoryForCurrentUser
+    return [
+      home.appendingPathComponent(".codex/sessions", isDirectory: true),
+      home.appendingPathComponent(".codex/archived_sessions", isDirectory: true),
+    ]
+  }
 
   public init(
     detector: CommandLineToolDetector = CommandLineToolDetector(),
-    sourceDirectory: URL = FileManager.default.homeDirectoryForCurrentUser.appendingPathComponent(
-      ".codex/sessions", isDirectory: true),
+    sourceDirectories: [URL] = Self.defaultSourceDirectories,
     parser: CodexUsageParser = CodexUsageParser()
   ) {
     self.detector = detector
-    self.sourceDirectory = sourceDirectory
+    self.sourceDirectories = sourceDirectories
+    self.parser = parser
+  }
+
+  public init(
+    detector: CommandLineToolDetector = CommandLineToolDetector(),
+    sourceDirectory: URL,
+    parser: CodexUsageParser = CodexUsageParser()
+  ) {
+    self.detector = detector
+    self.sourceDirectories = [sourceDirectory]
     self.parser = parser
   }
 
@@ -88,29 +105,39 @@ public struct CodexCLICollector: UsageCollector {
   }
 
   private func sourceFiles() throws -> [URL] {
-    guard FileManager.default.fileExists(atPath: sourceDirectory.path) else { return [] }
-    let enumerator = FileManager.default.enumerator(
-      at: sourceDirectory,
-      includingPropertiesForKeys: [.isRegularFileKey, .isSymbolicLinkKey, .fileSizeKey],
-      options: [.skipsHiddenFiles, .skipsPackageDescendants]
-    )
     var files: [URL] = []
-    while let url = enumerator?.nextObject() as? URL {
-      guard url.pathExtension == "jsonl" else { continue }
-      let values = try url.resourceValues(forKeys: [
-        .isRegularFileKey, .isSymbolicLinkKey, .fileSizeKey,
-      ])
-      guard values.isRegularFile == true, values.isSymbolicLink != true else { continue }
-      if let size = values.fileSize, size > 50 * 1024 * 1024 { continue }
-      files.append(url)
+    var visitedRoots: Set<String> = []
+
+    for sourceDirectory in sourceDirectories {
+      let root = sourceDirectory.standardizedFileURL.resolvingSymlinksInPath().path
+      guard visitedRoots.insert(root).inserted else { continue }
+      guard FileManager.default.fileExists(atPath: sourceDirectory.path) else { continue }
+      let enumerator = FileManager.default.enumerator(
+        at: sourceDirectory,
+        includingPropertiesForKeys: [.isRegularFileKey, .isSymbolicLinkKey, .fileSizeKey],
+        options: [.skipsHiddenFiles, .skipsPackageDescendants]
+      )
+      while let url = enumerator?.nextObject() as? URL {
+        guard url.pathExtension == "jsonl" else { continue }
+        let values = try url.resourceValues(forKeys: [
+          .isRegularFileKey, .isSymbolicLinkKey, .fileSizeKey,
+        ])
+        guard values.isRegularFile == true, values.isSymbolicLink != true else { continue }
+        if let size = values.fileSize, size > 50 * 1024 * 1024 { continue }
+        files.append(url)
+      }
     }
+
     return files.sorted { $0.path < $1.path }
   }
 
   private func safeResolvedFile(_ url: URL) throws -> URL {
-    let root = sourceDirectory.standardizedFileURL.resolvingSymlinksInPath().path
     let resolved = url.standardizedFileURL.resolvingSymlinksInPath()
-    guard resolved.path.hasPrefix(root + "/") else {
+    let isAllowed = sourceDirectories.contains { sourceDirectory in
+      let root = sourceDirectory.standardizedFileURL.resolvingSymlinksInPath().path
+      return resolved.path.hasPrefix(root + "/")
+    }
+    guard isAllowed else {
       throw CocoaError(.fileReadNoPermission)
     }
     return resolved
