@@ -69,6 +69,16 @@ final class StatusItemController: NSObject, ObservableObject {
     let tooltip = "TokenGlance \(pulseTooltip)"
 
     switch dependencies.settings.menuBarMetric {
+    case .usageStrip:
+      let metric = menuBarMetricText(summary: summary, strings: strings)
+      statusItem.length = NSStatusItem.variableLength
+      button.title = " \(metric.label)"
+      button.image = MenuBarSparklineRenderer.usageStripImage(
+        summary: summary,
+        pulse: dependencies.usagePulse)
+      button.imagePosition = .imageLeading
+      button.toolTip = tooltip
+      button.sizeToFit()
     case .sparklineToday:
       statusItem.length = 44
       button.title = ""
@@ -112,7 +122,7 @@ final class StatusItemController: NSObject, ObservableObject {
       let tokens = summary?.totals.outputTokens ?? 0
       let text = label(tokens)
       return (text, strings.outputTodayAccessibility(text))
-    case .totalToday, .sparklineToday, .iconOnly:
+    case .usageStrip, .totalToday, .sparklineToday, .iconOnly:
       let tokens = summary?.totals.calculatedTotal ?? 0
       return (label(tokens), strings.totalTokensTodayAccessibility(tokens))
     }

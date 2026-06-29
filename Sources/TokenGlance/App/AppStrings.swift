@@ -239,6 +239,8 @@ extension AppLanguage {
 extension MenuBarMetric {
   func localizedName(using strings: AppStrings) -> String {
     switch self {
+    case .usageStrip:
+      strings.pick(de: "Nutzungsstreifen", en: "Usage Strip")
     case .totalToday:
       strings.pick(de: "Tokens heute gesamt", en: "Total Tokens Today")
     case .sparklineToday:

@@ -19,8 +19,10 @@ browser data, credentials, cookies, or private provider APIs.
 
 - Native macOS menu-bar monitor with live refresh and automatic relaunch after
   app updates.
-- Tiny menu-bar sparkline plus tooltip details for peak hour, top model, cache
-  share, burn rate, and projected daily usage.
+- Always-on menu-bar Usage Strip with a compact sparkline, weather color, and
+  today's token total visible without opening the dashboard.
+- Tooltip details for peak hour, top model, cache share, burn rate, and
+  projected daily usage.
 - Token Weather for current usage intensity: calm, active, or stormy.
 - Dashboard for today, last 24 hours, last 7 days, and last 30 days.
 - Breakdown by input, output, cache, and reasoning tokens where available.
