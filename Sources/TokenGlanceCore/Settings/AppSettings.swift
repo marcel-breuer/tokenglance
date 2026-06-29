@@ -65,6 +65,32 @@ public enum RetentionPeriod: String, CaseIterable, Codable, Sendable {
   }
 }
 
+public struct ModelCostProfile: Codable, Equatable, Identifiable, Sendable {
+  public var id: String { modelPattern }
+  public var modelPattern: String
+  public var inputCostPerMillion: Double
+  public var outputCostPerMillion: Double
+  public var cachedInputCostPerMillion: Double
+
+  public init(
+    modelPattern: String,
+    inputCostPerMillion: Double,
+    outputCostPerMillion: Double,
+    cachedInputCostPerMillion: Double = 0
+  ) {
+    self.modelPattern = modelPattern
+    self.inputCostPerMillion = inputCostPerMillion
+    self.outputCostPerMillion = outputCostPerMillion
+    self.cachedInputCostPerMillion = cachedInputCostPerMillion
+  }
+
+  public func matches(model: String) -> Bool {
+    let pattern = modelPattern.trimmingCharacters(in: .whitespacesAndNewlines)
+    guard !pattern.isEmpty else { return false }
+    return model.localizedCaseInsensitiveContains(pattern)
+  }
+}
+
 public struct AppSettings: Codable, Equatable, Sendable {
   public var enabledCollectors: Set<CollectorIdentifier>
   public var refreshIntervalSeconds: TimeInterval
@@ -75,6 +101,7 @@ public struct AppSettings: Codable, Equatable, Sendable {
   public var launchAtLogin: Bool
   public var retentionPeriod: RetentionPeriod
   public var language: AppLanguage
+  public var modelCostProfiles: [ModelCostProfile]
   public var hasCompletedOnboarding: Bool
 
   public init(
@@ -87,6 +114,7 @@ public struct AppSettings: Codable, Equatable, Sendable {
     launchAtLogin: Bool = false,
     retentionPeriod: RetentionPeriod = .ninetyDays,
     language: AppLanguage = .system,
+    modelCostProfiles: [ModelCostProfile] = [],
     hasCompletedOnboarding: Bool = false
   ) {
     self.enabledCollectors = enabledCollectors
@@ -98,6 +126,7 @@ public struct AppSettings: Codable, Equatable, Sendable {
     self.launchAtLogin = launchAtLogin
     self.retentionPeriod = retentionPeriod
     self.language = language
+    self.modelCostProfiles = modelCostProfiles
     self.hasCompletedOnboarding = hasCompletedOnboarding
   }
 
@@ -111,6 +140,7 @@ public struct AppSettings: Codable, Equatable, Sendable {
     case launchAtLogin
     case retentionPeriod
     case language
+    case modelCostProfiles
     case hasCompletedOnboarding
   }
 
@@ -133,6 +163,8 @@ public struct AppSettings: Codable, Equatable, Sendable {
     self.retentionPeriod =
       try container.decodeIfPresent(RetentionPeriod.self, forKey: .retentionPeriod) ?? .ninetyDays
     self.language = try container.decodeIfPresent(AppLanguage.self, forKey: .language) ?? .system
+    self.modelCostProfiles =
+      try container.decodeIfPresent([ModelCostProfile].self, forKey: .modelCostProfiles) ?? []
     self.hasCompletedOnboarding =
       try container.decodeIfPresent(Bool.self, forKey: .hasCompletedOnboarding) ?? false
   }

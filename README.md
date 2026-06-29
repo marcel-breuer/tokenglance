@@ -1,19 +1,35 @@
 # TokenGlance
 
-Local token usage at a glance, right in the macOS menu bar.
+Private AI usage monitoring for the macOS menu bar.
 
-TokenGlance is a native, local-first macOS menu-bar app for monitoring token
-usage from AI coding tools. It imports verified local token metadata, keeps the
-data on your machine, and shows the current daily token count without opening a
-dashboard.
+TokenGlance is a native, local-first macOS app for understanding how intensely
+your AI coding tools are working. It imports verified local token metadata,
+keeps everything on your machine, and turns raw usage into a compact activity
+monitor: menu-bar totals, sparkline, burn rate, Token Weather, model efficiency,
+weekly reports, and collector health.
 
-![TokenGlance dashboard showing daily token totals, usage chart, and collector status](docs/assets/token-glance-dashboard.png)
+TokenGlance does not read prompts, responses, source code, shell history,
+browser data, credentials, cookies, or private provider APIs.
+
+| Light | Dark |
+| ----- | ---- |
+| ![TokenGlance light dashboard showing token weather, usage chart, model efficiency, schema drift status, and weekly report archive](docs/assets/token-glance-light.png) | ![TokenGlance dark dashboard showing token weather, usage chart, model efficiency, schema drift status, and weekly report archive](docs/assets/token-glance-dark.png) |
 
 ## Highlights
 
-- Menu-bar token count with live refresh.
+- Native macOS menu-bar monitor with live refresh and automatic relaunch after
+  app updates.
+- Tiny menu-bar sparkline plus tooltip details for peak hour, top model, cache
+  share, burn rate, and projected daily usage.
+- Token Weather for current usage intensity: calm, active, or stormy.
 - Dashboard for today, last 24 hours, last 7 days, and last 30 days.
 - Breakdown by input, output, cache, and reasoning tokens where available.
+- Model Efficiency view with average tokens per event, cache share, reasoning
+  share, and optional local cost estimates.
+- Local cost profiles for private, user-defined model price estimates.
+- Weekly Markdown report archive under local Application Support storage.
+- Schema Drift Radar to flag local metadata that exists but no longer matches a
+  supported parser shape.
 - Collector diagnostics for supported local tools.
 - CSV and JSON export of normalized usage metadata.
 - Local-only storage with no account, backend, analytics, or telemetry.
@@ -52,6 +68,9 @@ brew update
 brew upgrade --cask tokenglance
 ```
 
+If TokenGlance is running during an app-bundle update, the app detects the
+installed bundle version change and relaunches itself automatically.
+
 Some releases may be ad-hoc signed rather than Developer ID signed and notarized.
 Homebrew 6 no longer accepts the old `--no-quarantine` install option. If macOS
 blocks the first launch, approve TokenGlance in System Settings > Privacy &
@@ -85,10 +104,10 @@ local token metadata source is verified.
 
 ## Privacy
 
-All processing is local. TokenGlance does not upload usage data and does not read
-credentials, browser data, shell history, clipboard contents, prompts, responses,
-source code, or private provider APIs. Raw content encountered near metadata is
-discarded and never persisted.
+All processing is local. TokenGlance does not upload usage data and does not
+read credentials, browser data, shell history, clipboard contents, prompts,
+responses, source code, cookies, or private provider APIs. Raw content
+encountered near metadata is discarded and never persisted.
 
 Data is stored under:
 
@@ -98,6 +117,24 @@ Data is stored under:
 
 Deleting local usage data removes TokenGlance's database records and collector
 cursors; it never modifies source files belonging to external tools.
+
+Weekly reports and settings, including local cost profiles, are stored only in
+TokenGlance's Application Support directory.
+
+## Local Analytics
+
+TokenGlance is built around metadata-only insight:
+
+- **Burn Rate**: current last-hour token velocity.
+- **Token Weather**: a compact state for local AI activity intensity.
+- **Model Efficiency**: model-level token totals, average event size, cache
+  share, reasoning share, and optional cost estimates.
+- **Cost Profiles**: local user-defined model pricing; no billing API or cloud
+  account required.
+- **Weekly Reports**: Markdown reports with trends, peak hour, top models, cache
+  share, and token mix, archived locally.
+- **Schema Drift Radar**: diagnostics for local metadata records that are present
+  but no longer match a supported parser.
 
 ## Manual Installation
 
@@ -114,6 +151,12 @@ cursors; it never modifies source files belonging to external tools.
 swift build
 swift test
 ./scripts/package-release.sh 0.1.1
+```
+
+Regenerate README screenshots:
+
+```bash
+swift scripts/render-readme-screenshots.swift
 ```
 
 Docker is preferred when available, but this repository is a native macOS app and
@@ -173,6 +216,8 @@ supported distribution channel for external users.
 - User-approved Claude Code telemetry setup helper.
 - User-approved Antigravity token metadata setup when a documented local source
   is verified.
+- More local report export formats.
+- Optional budget thresholds and local notifications.
 - Additional collectors only after documented local metadata sources are
   verified.
 

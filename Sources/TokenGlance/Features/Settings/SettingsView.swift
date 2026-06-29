@@ -57,6 +57,49 @@ struct SettingsView: View {
           .font(.caption)
           .foregroundStyle(.secondary)
       }
+      Section(strings.costProfiles) {
+        Text(strings.costProfileDescription(dependencies.settings.modelCostProfiles.count))
+          .font(.caption)
+          .foregroundStyle(.secondary)
+        ForEach(dependencies.settings.modelCostProfiles.indices, id: \.self) { index in
+          VStack(alignment: .leading, spacing: 6) {
+            TextField(
+              strings.modelPattern,
+              text: $dependencies.settings.modelCostProfiles[index].modelPattern
+            )
+            HStack {
+              TextField(
+                strings.inputCost,
+                value: $dependencies.settings.modelCostProfiles[index].inputCostPerMillion,
+                format: .number.precision(.fractionLength(0...4))
+              )
+              TextField(
+                strings.outputCost,
+                value: $dependencies.settings.modelCostProfiles[index].outputCostPerMillion,
+                format: .number.precision(.fractionLength(0...4))
+              )
+              TextField(
+                strings.cachedCost,
+                value: $dependencies.settings.modelCostProfiles[index].cachedInputCostPerMillion,
+                format: .number.precision(.fractionLength(0...4))
+              )
+              Button {
+                dependencies.settings.modelCostProfiles.remove(at: index)
+              } label: {
+                Image(systemName: "trash")
+              }
+              .buttonStyle(.borderless)
+            }
+          }
+        }
+        Button {
+          dependencies.settings.modelCostProfiles.append(
+            ModelCostProfile(modelPattern: "gpt", inputCostPerMillion: 0, outputCostPerMillion: 0)
+          )
+        } label: {
+          Label(strings.addCostProfile, systemImage: "plus")
+        }
+      }
       Section(strings.collectors) {
         ForEach(CollectorIdentifier.allCases, id: \.self) { collector in
           Toggle(

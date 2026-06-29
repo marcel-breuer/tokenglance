@@ -16,6 +16,7 @@
 - Added a local weekly Markdown report with trends, peak usage, top models, and cache share.
 - Added Burn Rate and Token Weather indicators for current local usage intensity.
 - Added automatic relaunch when the installed app bundle changes while TokenGlance is running.
+- Added model efficiency analytics, local cost profiles, report archiving, schema drift diagnostics, and refreshed README screenshots.
 
 ## 0.1.1
 
