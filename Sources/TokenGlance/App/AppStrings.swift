@@ -56,6 +56,7 @@ struct AppStrings {
   var models: String { pick(de: "Modelle", en: "Models") }
   var diagnostics: String { pick(de: "Diagnose", en: "Diagnostics") }
   var copy: String { pick(de: "Kopieren", en: "Copy") }
+  var weeklyReport: String { pick(de: "Wochenbericht", en: "Weekly report") }
   var diagnosticsUnavailable: String {
     pick(de: "Diagnose ist noch nicht verfügbar.", en: "Diagnostics are not available yet.")
   }

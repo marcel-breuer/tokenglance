@@ -8,6 +8,7 @@ final class AppDependencies: ObservableObject {
   let settingsStore = SettingsStore()
   let aggregator = UsageAggregator()
   let diagnosticsBuilder = DiagnosticsBuilder()
+  let weeklyReportBuilder = WeeklyUsageReportBuilder()
   let collectors: [any UsageCollector]
 
   @Published var settings = AppSettings()
@@ -129,6 +130,16 @@ final class AppDependencies: ObservableObject {
       try? await database.deleteAllData()
       await loadMenuBarSummary()
       await loadSummary()
+    }
+  }
+
+  func weeklyReportMarkdown() async -> String {
+    let interval = aggregator.interval(for: .last30Days)
+    do {
+      let reportEvents = try await database.fetchEvents(from: interval.start, to: interval.end)
+      return weeklyReportBuilder.markdown(events: reportEvents)
+    } catch {
+      return Redactor().redact(error.localizedDescription)
     }
   }
 

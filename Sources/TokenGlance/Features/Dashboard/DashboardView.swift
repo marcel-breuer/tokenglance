@@ -52,6 +52,19 @@ struct DashboardView: View {
       .accessibilityIdentifier("dashboard-mode-picker")
 
       Button {
+        Task {
+          let report = await dependencies.weeklyReportMarkdown()
+          NSPasteboard.general.clearContents()
+          NSPasteboard.general.setString(report, forType: .string)
+        }
+      } label: {
+        Image(systemName: "calendar.badge.clock")
+      }
+      .buttonStyle(.borderless)
+      .help(strings.weeklyReport)
+      .accessibilityIdentifier("weekly-report-button")
+
+      Button {
         Task { await dependencies.refresh() }
       } label: {
         Image(
