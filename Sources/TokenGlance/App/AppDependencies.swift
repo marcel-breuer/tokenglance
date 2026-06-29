@@ -7,6 +7,7 @@ final class AppDependencies: ObservableObject {
   let database = UsageDatabase()
   let settingsStore = SettingsStore()
   let aggregator = UsageAggregator()
+  let pulseAnalyzer = UsagePulseAnalyzer()
   let diagnosticsBuilder = DiagnosticsBuilder()
   let weeklyReportBuilder = WeeklyUsageReportBuilder()
   let collectors: [any UsageCollector]
@@ -15,6 +16,7 @@ final class AppDependencies: ObservableObject {
   @Published var events: [UsageEvent] = []
   @Published var summary: UsageSummary?
   @Published var menuBarSummary: UsageSummary?
+  @Published var usagePulse = UsagePulse.empty
   @Published var diagnosticsText = ""
   @Published var collectorDiagnostics: [CollectorDiagnostic] = []
   @Published var selectedPeriod: ReportingPeriod = .today
@@ -110,6 +112,7 @@ final class AppDependencies: ObservableObject {
     do {
       let todayEvents = try await database.fetchEvents(from: interval.start, to: interval.end)
       menuBarSummary = aggregator.summarize(events: todayEvents, period: .today)
+      usagePulse = pulseAnalyzer.analyze(events: todayEvents)
     } catch {
       diagnosticsText = Redactor().redact(error.localizedDescription)
     }

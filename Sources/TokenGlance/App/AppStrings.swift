@@ -46,6 +46,9 @@ struct AppStrings {
   var cached: String { pick(de: "Cache", en: "Cached") }
   var reasoning: String { pick(de: "Reasoning", en: "Reasoning") }
   var usage: String { pick(de: "Nutzung", en: "Usage") }
+  var tokenWeather: String { pick(de: "Token-Wetter", en: "Token Weather") }
+  var burnRate: String { pick(de: "Burn Rate", en: "Burn Rate") }
+  var projectedToday: String { pick(de: "Prognose heute", en: "Projected Today") }
   var chartTime: String { pick(de: "Zeit", en: "Time") }
   var chartTokens: String { pick(de: "Tokens", en: "Tokens") }
   var notDetected: String { pick(de: "nicht erkannt", en: "not detected") }
@@ -122,6 +125,29 @@ struct AppStrings {
 
   func outputTodayAccessibility(_ label: String) -> String {
     pick(de: "\(label) Ausgabe-Tokens heute", en: "\(label) output tokens today")
+  }
+
+  func tokensPerHour(_ label: String) -> String {
+    pick(de: "\(label) Tokens/h", en: "\(label) tokens/h")
+  }
+
+  func projectedTokensToday(_ label: String) -> String {
+    pick(de: "\(label) Tokens heute prognostiziert", en: "\(label) projected tokens today")
+  }
+
+  func menuBarPulseTooltip(totalTokens: Int, pulse: UsagePulse) -> String {
+    let burnRate = compactTokens(pulse.burnRatePerHour)
+    let projection = compactTokens(pulse.projectedTokensToday)
+    return pick(
+      de:
+        "\(totalTokens.formatted()) Tokens heute\nWetter: \(pulse.weather.localizedName(using: self))\nBurn Rate: \(burnRate) Tokens/h\nPrognose: \(projection)",
+      en:
+        "\(totalTokens.formatted()) total tokens today\nWeather: \(pulse.weather.localizedName(using: self))\nBurn rate: \(burnRate) tokens/h\nProjection: \(projection)"
+    )
+  }
+
+  private func compactTokens(_ value: Int) -> String {
+    value.formatted(.number.notation(.compactName).precision(.fractionLength(0...1)))
   }
 
   func pick(de: String, en: String) -> String {
@@ -205,6 +231,19 @@ extension UsageAccuracy {
       strings.pick(de: "teilweise", en: "partial")
     case .unavailable:
       strings.pick(de: "nicht verfügbar", en: "unavailable")
+    }
+  }
+}
+
+extension TokenWeather {
+  func localizedName(using strings: AppStrings) -> String {
+    switch self {
+    case .calm:
+      strings.pick(de: "ruhig", en: "calm")
+    case .active:
+      strings.pick(de: "aktiv", en: "active")
+    case .stormy:
+      strings.pick(de: "stürmisch", en: "stormy")
     }
   }
 }

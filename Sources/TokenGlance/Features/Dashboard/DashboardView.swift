@@ -97,6 +97,7 @@ struct DashboardView: View {
       VStack(alignment: .leading, spacing: 12) {
         periodStrip
         totalsPanel
+        pulsePanel
         usageChart
         collectorModules
         breakdownColumns
@@ -183,6 +184,31 @@ struct DashboardView: View {
     }
     .padding(12)
     .background(.background.secondary, in: RoundedRectangle(cornerRadius: 8))
+  }
+
+  private var pulsePanel: some View {
+    let pulse = dependencies.usagePulse
+    return HStack(spacing: 12) {
+      WeatherBadge(weather: pulse.weather, strings: strings)
+      VStack(alignment: .leading, spacing: 4) {
+        Text(strings.burnRate)
+          .font(.caption)
+          .foregroundStyle(.secondary)
+        Text(strings.tokensPerHour(TokenNumberFormat.compact(pulse.burnRatePerHour)))
+          .font(.headline.monospacedDigit().weight(.semibold))
+      }
+      Spacer()
+      VStack(alignment: .trailing, spacing: 4) {
+        Text(strings.projectedToday)
+          .font(.caption)
+          .foregroundStyle(.secondary)
+        Text(TokenNumberFormat.compact(pulse.projectedTokensToday))
+          .font(.headline.monospacedDigit().weight(.semibold))
+      }
+    }
+    .padding(12)
+    .background(.background.secondary, in: RoundedRectangle(cornerRadius: 8))
+    .accessibilityIdentifier("usage-pulse-panel")
   }
 
   private var usageChart: some View {
@@ -359,6 +385,39 @@ private struct LiveStatusDot: View {
         }
       }
       .accessibilityLabel(isRunning ? strings.liveRefreshRunning : strings.liveRefreshDisabled)
+  }
+}
+
+private struct WeatherBadge: View {
+  let weather: TokenWeather
+  let strings: AppStrings
+
+  var body: some View {
+    VStack(alignment: .leading, spacing: 4) {
+      Label(strings.tokenWeather, systemImage: symbol)
+        .font(.caption)
+        .foregroundStyle(.secondary)
+      Text(weather.localizedName(using: strings))
+        .font(.headline.weight(.semibold))
+        .foregroundStyle(color)
+    }
+    .frame(minWidth: 92, alignment: .leading)
+  }
+
+  private var symbol: String {
+    switch weather {
+    case .calm: "cloud"
+    case .active: "sun.max"
+    case .stormy: "cloud.bolt"
+    }
+  }
+
+  private var color: Color {
+    switch weather {
+    case .calm: .green
+    case .active: .orange
+    case .stormy: .red
+    }
   }
 }
 
