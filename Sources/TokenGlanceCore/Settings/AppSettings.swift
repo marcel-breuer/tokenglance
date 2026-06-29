@@ -41,7 +41,7 @@ public enum MenuBarMetric: String, CaseIterable, Codable, Sendable {
   }
 
   public static var selectableCases: [MenuBarMetric] {
-    [.totalToday, .lastHour, .inputToday, .outputToday, .iconOnly]
+    [.totalToday]
   }
 }
 

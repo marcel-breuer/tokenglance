@@ -71,6 +71,7 @@ struct AppStrings {
   var noExactUsage: String { pick(de: "Keine exakte Nutzung", en: "No exact usage") }
   var todayShort: String { pick(de: "heute", en: "today") }
   var menuBarIcon: String { pick(de: "Menüleistensymbol", en: "menu bar icon") }
+  var quitTokenGlance: String { pick(de: "TokenGlance beenden", en: "Quit TokenGlance") }
   var onboardingPrivacy: String {
     pick(
       de:

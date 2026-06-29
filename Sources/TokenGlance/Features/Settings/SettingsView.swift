@@ -13,11 +13,6 @@ struct SettingsView: View {
           Text(language.localizedName(using: strings)).tag(language)
         }
       }
-      Picker(strings.menuBarMetric, selection: $dependencies.settings.menuBarMetric) {
-        ForEach(MenuBarMetric.selectableCases, id: \.self) { metric in
-          Text(metric.localizedName(using: strings)).tag(metric)
-        }
-      }
       Picker(strings.defaultPeriod, selection: $dependencies.settings.defaultReportingPeriod) {
         ForEach(ReportingPeriod.allCases, id: \.self) { period in
           Text(period.localizedName(using: strings)).tag(period)
