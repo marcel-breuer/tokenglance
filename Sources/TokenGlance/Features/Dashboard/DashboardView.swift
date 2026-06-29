@@ -1,10 +1,12 @@
 import Charts
 import SwiftUI
 import TokenGlanceCore
+import UniformTypeIdentifiers
 
 struct DashboardView: View {
   @EnvironmentObject private var dependencies: AppDependencies
   @State private var mode: DashboardMode = .overview
+  @State private var isImportingUsageFile = false
   private var strings: AppStrings { AppStrings(dependencies.settings.language) }
 
   var body: some View {
@@ -19,6 +21,11 @@ struct DashboardView: View {
         await dependencies.refresh()
       }
     }
+    .fileImporter(
+      isPresented: $isImportingUsageFile,
+      allowedContentTypes: [.commaSeparatedText, .json, .plainText],
+      allowsMultipleSelection: false,
+      onCompletion: handleUsageImport)
   }
 
   private var topBar: some View {
@@ -50,6 +57,15 @@ struct DashboardView: View {
       .pickerStyle(.segmented)
       .frame(width: 118)
       .accessibilityIdentifier("dashboard-mode-picker")
+
+      Button {
+        isImportingUsageFile = true
+      } label: {
+        Image(systemName: "tray.and.arrow.down")
+      }
+      .buttonStyle(.borderless)
+      .help(strings.importUsageMetadata)
+      .accessibilityIdentifier("usage-import-button")
 
       Button {
         Task {
@@ -131,9 +147,9 @@ struct DashboardView: View {
           )
         ) {
           Text(strings.allTools).tag(Optional<ToolIdentifier>.none)
-          Text("Codex").tag(Optional(ToolIdentifier.codexCLI))
-          Text("Claude").tag(Optional(ToolIdentifier.claudeCode))
-          Text("Antigravity").tag(Optional(ToolIdentifier.antigravity))
+          ForEach(ToolIdentifier.allCases, id: \.self) { tool in
+            Text(tool.displayName).tag(Optional(tool))
+          }
         }
 
         Picker(
@@ -309,7 +325,7 @@ struct DashboardView: View {
         title: strings.tools,
         symbol: "hammer",
         rows: (dependencies.summary?.byTool ?? [:]).map {
-          ($0.key.rawValue, $0.value.calculatedTotal)
+          ($0.key.displayName, $0.value.calculatedTotal)
         },
         strings: strings
       )
@@ -362,6 +378,16 @@ struct DashboardView: View {
   private var lastRefreshText: String {
     guard let date = dependencies.lastRefresh else { return strings.notRefreshedYet }
     return strings.lastRefresh(date)
+  }
+
+  private func handleUsageImport(_ result: Result<[URL], Error>) {
+    switch result {
+    case .success(let urls):
+      guard let url = urls.first else { return }
+      Task { await dependencies.importUsageMetadata(from: url) }
+    case .failure(let error):
+      dependencies.diagnosticsText = Redactor().redact(error.localizedDescription)
+    }
   }
 }
 

@@ -5,6 +5,7 @@
 | Codex CLI | `codex --version` | Local `.jsonl` token metadata under known Codex session directories | File reconciliation | input, output, cached input, reasoning, total when present | Exact for parsed token metadata | No |
 | Claude Code | `claude --version` | Not enabled by default | Documented OpenTelemetry telemetry parser | input, output, cache read, cache creation, reasoning when present | Exact for parsed telemetry | Yes |
 | Antigravity | `agy --version` | Not yet | Not yet | Not yet verified | Unavailable until a documented local token metadata source is verified | Yes |
+| Manual import | User-selected CSV/JSON metadata file | Yes | On demand | input, output, cached input, cache creation, reasoning, other, total | Exact for user-provided metadata | No |
 
 TokenGlance detects Antigravity safely but does not read Antigravity conversations, logs, browser-style storage, or credentials until a documented local token metadata source is verified.
 
@@ -14,3 +15,10 @@ Codex collection scans only local `.jsonl` files under:
 ~/.codex/sessions/
 ~/.codex/archived_sessions/
 ```
+
+Manual import supports ChatGPT, Claude, Gemini, OpenAI API, Anthropic API, and
+Google AI API usage metadata without reading private app stores, browser data,
+provider accounts, cookies, or private APIs. The accepted CSV/JSON fields are
+timestamp, tool, provider, model, input tokens, output tokens, cached input
+tokens, cache creation tokens, reasoning tokens, other tokens, and total tokens.
+Conversation text fields are ignored.

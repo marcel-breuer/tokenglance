@@ -70,6 +70,64 @@ struct ParserTests {
     #expect(batch.events[0].provider == .google)
     #expect(batch.events[0].tool == .antigravity)
   }
+
+  @Test("Manual CSV import accepts general AI tool metadata")
+  func manualCSVImport() throws {
+    let csv = """
+      timestamp,tool,provider,model,input_tokens,output_tokens,cached_input_tokens,reasoning_tokens,total_tokens
+      2026-06-29T08:00:00Z,ChatGPT,openai,gpt-4o,120,40,10,0,170
+      2026-06-29T09:00:00Z,Claude,anthropic,claude-3.7-sonnet,90,55,0,12,157
+      2026-06-29T10:00:00Z,Gemini,google,gemini-2.5-pro,80,60,5,20,165
+      """
+    let batch = try ManualUsageImportParser().parse(
+      Data(csv.utf8), sourceName: "general-ai.csv")
+
+    #expect(batch.events.count == 3)
+    #expect(batch.invalidRecords == 0)
+    #expect(batch.events.map(\.tool) == [.chatGPT, .claude, .gemini])
+    #expect(batch.events.map(\.provider) == [.openAI, .anthropic, .google])
+    #expect(batch.events[0].collector == .manualImport)
+    #expect(batch.events[0].sourceKind == .manualImport)
+    #expect(batch.events[2].tokens.reasoningTokens == 20)
+  }
+
+  @Test("Manual JSON import ignores raw conversation fields")
+  func manualJSONImportPrivacy() throws {
+    let json = """
+      {
+        "events": [
+          {
+            "timestamp": "2026-06-29T11:00:00Z",
+            "tool": "openai-api",
+            "model": "gpt-4.1",
+            "input_tokens": 20,
+            "output_tokens": 30,
+            "prompt": "SYNTHETIC_SECRET_PROMPT_SHOULD_NOT_APPEAR",
+            "response": "SYNTHETIC_SECRET_RESPONSE_SHOULD_NOT_APPEAR"
+          }
+        ]
+      }
+      """
+    let batch = try ManualUsageImportParser().parse(
+      Data(json.utf8), sourceName: "api-usage.json")
+
+    #expect(batch.events.count == 1)
+    #expect(batch.events[0].tool == .openAIAPI)
+    #expect(batch.events[0].provider == .openAI)
+    let encoded = String(data: try JSONEncoder().encode(batch.events), encoding: .utf8) ?? ""
+    #expect(!encoded.contains("SYNTHETIC_SECRET_PROMPT_SHOULD_NOT_APPEAR"))
+    #expect(!encoded.contains("SYNTHETIC_SECRET_RESPONSE_SHOULD_NOT_APPEAR"))
+  }
+
+  @Test("General AI tools are available for filtering")
+  func generalAIToolsAreFilterable() {
+    #expect(ToolIdentifier.allCases.contains(.chatGPT))
+    #expect(ToolIdentifier.allCases.contains(.claude))
+    #expect(ToolIdentifier.allCases.contains(.gemini))
+    #expect(ToolIdentifier.allCases.contains(.openAIAPI))
+    #expect(ToolIdentifier.allCases.contains(.anthropicAPI))
+    #expect(ToolIdentifier.allCases.contains(.googleAIAPI))
+  }
 }
 
 private func fixture(_ path: String) throws -> Data {
