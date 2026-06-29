@@ -22,8 +22,15 @@ struct SettingsTests {
     #expect(settings.liveRefreshEnabled)
     #expect(settings.liveRefreshIntervalSeconds == 5)
     #expect(settings.enabledCollectors == [.codexCLI])
+    #expect(settings.menuBarMetric == .totalToday)
     #expect(settings.language == .system)
     #expect(settings.modelCostProfiles.isEmpty)
+  }
+
+  @Test("Missing menu bar mode defaults to usage strip")
+  func missingMenuBarModeDefaultsToUsageStrip() throws {
+    let settings = try JSONDecoder().decode(AppSettings.self, from: Data("{}".utf8))
+    #expect(settings.menuBarMetric == .usageStrip)
   }
 
   @Test("Legacy icon-only menu bar mode decodes but is not selectable")
@@ -36,11 +43,12 @@ struct SettingsTests {
     let settings = try JSONDecoder().decode(AppSettings.self, from: Data(json.utf8))
     #expect(settings.menuBarMetric == .iconOnly)
     #expect(!MenuBarMetric.selectableCases.contains(.iconOnly))
-    #expect(MenuBarMetric.selectableCases.first == .totalToday)
+    #expect(MenuBarMetric.selectableCases.first == .usageStrip)
   }
 
-  @Test("Sparkline menu bar mode is selectable")
-  func sparklineMenuBarModeIsSelectable() {
+  @Test("Usage strip and sparkline menu bar modes are selectable")
+  func modernMenuBarModesAreSelectable() {
+    #expect(MenuBarMetric.selectableCases.contains(.usageStrip))
     #expect(MenuBarMetric.selectableCases.contains(.sparklineToday))
   }
 

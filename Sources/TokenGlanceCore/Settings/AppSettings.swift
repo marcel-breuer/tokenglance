@@ -24,6 +24,7 @@ public enum ResolvedAppLanguage: Sendable {
 }
 
 public enum MenuBarMetric: String, CaseIterable, Codable, Sendable {
+  case usageStrip
   case totalToday
   case sparklineToday
   case lastHour
@@ -33,6 +34,7 @@ public enum MenuBarMetric: String, CaseIterable, Codable, Sendable {
 
   public var displayName: String {
     switch self {
+    case .usageStrip: "Usage Strip"
     case .totalToday: "Total Tokens Today"
     case .sparklineToday: "Sparkline Today"
     case .lastHour: "Last Hour"
@@ -43,7 +45,7 @@ public enum MenuBarMetric: String, CaseIterable, Codable, Sendable {
   }
 
   public static var selectableCases: [MenuBarMetric] {
-    [.totalToday, .sparklineToday]
+    [.usageStrip, .totalToday, .sparklineToday]
   }
 }
 
@@ -109,7 +111,7 @@ public struct AppSettings: Codable, Equatable, Sendable {
     refreshIntervalSeconds: TimeInterval = 300,
     liveRefreshEnabled: Bool = true,
     liveRefreshIntervalSeconds: TimeInterval = 5,
-    menuBarMetric: MenuBarMetric = .totalToday,
+    menuBarMetric: MenuBarMetric = .usageStrip,
     defaultReportingPeriod: ReportingPeriod = .today,
     launchAtLogin: Bool = false,
     retentionPeriod: RetentionPeriod = .ninetyDays,
@@ -156,7 +158,7 @@ public struct AppSettings: Codable, Equatable, Sendable {
     self.liveRefreshIntervalSeconds =
       try container.decodeIfPresent(TimeInterval.self, forKey: .liveRefreshIntervalSeconds) ?? 5
     self.menuBarMetric =
-      try container.decodeIfPresent(MenuBarMetric.self, forKey: .menuBarMetric) ?? .totalToday
+      try container.decodeIfPresent(MenuBarMetric.self, forKey: .menuBarMetric) ?? .usageStrip
     self.defaultReportingPeriod =
       try container.decodeIfPresent(ReportingPeriod.self, forKey: .defaultReportingPeriod) ?? .today
     self.launchAtLogin = try container.decodeIfPresent(Bool.self, forKey: .launchAtLogin) ?? false
