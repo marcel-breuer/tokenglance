@@ -10,7 +10,7 @@ TokenGlance refreshes automatically by default. Counts update when supported too
 
 - macOS 14 Sonoma or newer
 - Apple Silicon
-- No account, hosted backend, analytics, telemetry, Developer ID signing, or notarization
+- No account, hosted backend, analytics, or telemetry
 
 ## Supported Tools
 
@@ -41,7 +41,7 @@ Data is stored under:
 
 ## Installation
 
-Homebrew personal tap:
+Homebrew public tap:
 
 ```bash
 brew install --cask marcel-breuer/tap/tokenglance
@@ -54,7 +54,26 @@ brew tap marcel-breuer/tap
 brew install --cask tokenglance
 ```
 
-TokenGlance is currently not signed with an Apple Developer ID and is not notarized by Apple. Homebrew 6 no longer accepts the old `--no-quarantine` install option. If macOS blocks the first launch, approve TokenGlance in System Settings > Privacy & Security or remove the quarantine attribute for this app only:
+After tapping, TokenGlance is discoverable through Homebrew search:
+
+```bash
+brew search tokenglance
+```
+
+External users do not need GitHub credentials to install from the public tap.
+TokenGlance is not listed on brew.sh/formulae.brew.sh yet because those pages
+index the official Homebrew taps. To appear there, TokenGlance must be accepted
+into `Homebrew/homebrew-cask`; the current public tap remains the supported
+distribution channel until the app meets the official Cask requirements.
+
+Upgrade an existing Homebrew installation:
+
+```bash
+brew update
+brew upgrade --cask tokenglance
+```
+
+Some releases may be ad-hoc signed rather than Developer ID signed and notarized. Homebrew 6 no longer accepts the old `--no-quarantine` install option. If macOS blocks the first launch, approve TokenGlance in System Settings > Privacy & Security or remove the quarantine attribute for this app only:
 
 ```bash
 xattr -dr com.apple.quarantine /Applications/TokenGlance.app
@@ -82,7 +101,7 @@ Docker is preferred when available, but this repository is a native macOS app an
 
 ## Release
 
-The release script builds an optimized ARM64 app, applies an ad-hoc signature, verifies the app bundle, creates a ZIP, and writes a SHA-256 checksum:
+The release script builds an optimized ARM64 app, signs it, verifies the app bundle, creates a ZIP, and writes a SHA-256 checksum:
 
 ```bash
 ./scripts/package-release.sh 0.1.1
@@ -98,6 +117,33 @@ The GitHub release workflow updates the Homebrew cask after creating the release
 Configure `HOMEBREW_TAP_TOKEN` as a repository secret with write access to the tap
 repository. The workflow defaults to `marcel-breuer/homebrew-tap`; set the
 repository variable `HOMEBREW_TAP_REPOSITORY` to override it.
+
+Developer ID signing and notarization are optional for local development but
+required before submitting TokenGlance to the official Homebrew Cask tap. To
+produce a Gatekeeper-accepted release in CI, configure these repository secrets:
+
+- `DEVELOPER_ID_CERTIFICATE_BASE64`: base64-encoded `.p12` Developer ID
+  Application certificate.
+- `DEVELOPER_ID_CERTIFICATE_PASSWORD`: password for the `.p12` certificate.
+- `DEVELOPER_ID_APPLICATION`: exact codesign identity, for example
+  `Developer ID Application: Example Name (TEAMID)`.
+- `KEYCHAIN_PASSWORD`: temporary CI keychain password.
+- `APPLE_ID`: Apple ID used for notarization.
+- `APPLE_TEAM_ID`: Apple Developer Team ID.
+- `APPLE_APP_SPECIFIC_PASSWORD`: app-specific password for notarization.
+
+With those secrets present, `./scripts/package-release.sh` signs with the
+Developer ID identity, submits the ZIP to Apple notarization, staples the app,
+verifies it with Gatekeeper, and regenerates the final ZIP/checksum.
+
+Official Homebrew listing:
+
+TokenGlance can be submitted to `Homebrew/homebrew-cask` once it satisfies the
+official acceptance requirements. In particular, the app should launch with
+Gatekeeper enabled on supported macOS versions, should meet Homebrew's
+notability expectations for new, self-submitted casks, and should pass Homebrew
+Cask audit. Until then, keep the public tap current so external users can
+install and upgrade with Homebrew.
 
 ## Export And Deletion
 
