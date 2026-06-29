@@ -14,6 +14,7 @@
 - Formatted chart axis labels without scientific notation.
 - Added a selectable tiny menu-bar sparkline for today's token usage.
 - Added a local weekly Markdown report with trends, peak usage, top models, and cache share.
+- Added Burn Rate and Token Weather indicators for current local usage intensity.
 
 ## 0.1.1
 

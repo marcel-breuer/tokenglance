@@ -47,6 +47,13 @@ final class StatusItemController: NSObject, ObservableObject {
         self?.updateStatusItem()
       }
       .store(in: &cancellables)
+
+    dependencies.$usagePulse
+      .receive(on: RunLoop.main)
+      .sink { [weak self] _ in
+        self?.updateStatusItem()
+      }
+      .store(in: &cancellables)
   }
 
   private func updateStatusItem() {
@@ -54,6 +61,11 @@ final class StatusItemController: NSObject, ObservableObject {
     let strings = AppStrings(dependencies.settings.language)
     let summary = dependencies.menuBarSummary
     let totalTokens = summary?.totals.calculatedTotal ?? 0
+    let pulseTooltip = strings.menuBarPulseTooltip(
+      totalTokens: totalTokens,
+      pulse: dependencies.usagePulse
+    )
+    let tooltip = "TokenGlance \(pulseTooltip)"
 
     switch dependencies.settings.menuBarMetric {
     case .sparklineToday:
@@ -61,20 +73,20 @@ final class StatusItemController: NSObject, ObservableObject {
       button.title = ""
       button.image = MenuBarSparklineRenderer.image(summary: summary)
       button.imagePosition = .imageOnly
-      button.toolTip = "TokenGlance \(strings.tokenSparklineTodayAccessibility(totalTokens))"
+      button.toolTip = tooltip
     case .iconOnly:
       statusItem.length = NSStatusItem.squareLength
       button.title = ""
       button.image = symbolImage()
       button.imagePosition = .imageOnly
-      button.toolTip = "TokenGlance \(strings.totalTokensTodayAccessibility(totalTokens))"
+      button.toolTip = tooltip
     case .totalToday, .lastHour, .inputToday, .outputToday:
       let metric = menuBarMetricText(summary: summary, strings: strings)
       statusItem.length = NSStatusItem.variableLength
       button.title = " \(metric.label)"
       button.image = symbolImage()
       button.imagePosition = .imageLeading
-      button.toolTip = "TokenGlance \(metric.accessibilityText)"
+      button.toolTip = tooltip
       button.sizeToFit()
     }
   }
