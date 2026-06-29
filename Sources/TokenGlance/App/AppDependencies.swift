@@ -10,6 +10,7 @@ final class AppDependencies: ObservableObject {
   let pulseAnalyzer = UsagePulseAnalyzer()
   let diagnosticsBuilder = DiagnosticsBuilder()
   let weeklyReportBuilder = WeeklyUsageReportBuilder()
+  let updateRelaunchMonitor = UpdateRelaunchMonitor()
   let collectors: [any UsageCollector]
 
   @Published var settings = AppSettings()
@@ -51,6 +52,7 @@ final class AppDependencies: ObservableObject {
         try await database.open()
         await refresh()
         configureLiveRefresh()
+        updateRelaunchMonitor.start()
       } catch {
         diagnosticsText = Redactor().redact(error.localizedDescription)
       }
