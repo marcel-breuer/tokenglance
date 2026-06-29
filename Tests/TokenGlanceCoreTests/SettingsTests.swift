@@ -25,8 +25,8 @@ struct SettingsTests {
     #expect(settings.language == .system)
   }
 
-  @Test("Icon-only menu bar mode is selectable")
-  func iconOnlyMenuBarModeIsSelectable() throws {
+  @Test("Legacy icon-only menu bar mode decodes but is not selectable")
+  func legacyIconOnlyMenuBarModeDecodesButIsNotSelectable() throws {
     let json = """
       {
         "menuBarMetric": "iconOnly"
@@ -34,7 +34,7 @@ struct SettingsTests {
       """
     let settings = try JSONDecoder().decode(AppSettings.self, from: Data(json.utf8))
     #expect(settings.menuBarMetric == .iconOnly)
-    #expect(MenuBarMetric.selectableCases.contains(.iconOnly))
+    #expect(!MenuBarMetric.selectableCases.contains(.iconOnly))
     #expect(MenuBarMetric.selectableCases.first == .totalToday)
   }
 
