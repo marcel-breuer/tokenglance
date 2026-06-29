@@ -51,11 +51,11 @@ final class StatusItemController: NSObject, ObservableObject {
 
   private func updateStatusItem() {
     guard let button = statusItem.button else { return }
-    let strings = AppStrings(dependencies.settings.language)
     let tokens = dependencies.menuBarSummary?.totals.calculatedTotal ?? 0
     let label = tokens.formatted(
       .number.notation(.compactName).precision(.fractionLength(0...1)))
-    button.title = " \(label) \(strings.todayShort)"
+    button.title = " \(label)"
+    let strings = AppStrings(dependencies.settings.language)
     button.toolTip = "TokenGlance \(strings.totalTokensTodayAccessibility(tokens))"
     button.sizeToFit()
   }
