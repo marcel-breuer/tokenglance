@@ -25,6 +25,7 @@ public enum ResolvedAppLanguage: Sendable {
 
 public enum MenuBarMetric: String, CaseIterable, Codable, Sendable {
   case totalToday
+  case sparklineToday
   case lastHour
   case inputToday
   case outputToday
@@ -33,6 +34,7 @@ public enum MenuBarMetric: String, CaseIterable, Codable, Sendable {
   public var displayName: String {
     switch self {
     case .totalToday: "Total Tokens Today"
+    case .sparklineToday: "Sparkline Today"
     case .lastHour: "Last Hour"
     case .inputToday: "Input Tokens Today"
     case .outputToday: "Output Tokens Today"
@@ -41,7 +43,7 @@ public enum MenuBarMetric: String, CaseIterable, Codable, Sendable {
   }
 
   public static var selectableCases: [MenuBarMetric] {
-    [.totalToday]
+    [.totalToday, .sparklineToday]
   }
 }
 

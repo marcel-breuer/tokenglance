@@ -31,7 +31,7 @@ final class StatusItemController: NSObject, ObservableObject {
 
   private func configureStatusItem() {
     guard let button = statusItem.button else { return }
-    button.image = NSImage(systemSymbolName: "chart.bar.xaxis", accessibilityDescription: nil)
+    button.image = symbolImage()
     button.imagePosition = .imageLeading
     button.target = self
     button.action = #selector(statusItemClicked(_:))
@@ -51,13 +51,64 @@ final class StatusItemController: NSObject, ObservableObject {
 
   private func updateStatusItem() {
     guard let button = statusItem.button else { return }
-    let tokens = dependencies.menuBarSummary?.totals.calculatedTotal ?? 0
-    let label = tokens.formatted(
-      .number.notation(.compactName).precision(.fractionLength(0...1)))
-    button.title = " \(label)"
     let strings = AppStrings(dependencies.settings.language)
-    button.toolTip = "TokenGlance \(strings.totalTokensTodayAccessibility(tokens))"
-    button.sizeToFit()
+    let summary = dependencies.menuBarSummary
+    let totalTokens = summary?.totals.calculatedTotal ?? 0
+
+    switch dependencies.settings.menuBarMetric {
+    case .sparklineToday:
+      statusItem.length = 44
+      button.title = ""
+      button.image = MenuBarSparklineRenderer.image(summary: summary)
+      button.imagePosition = .imageOnly
+      button.toolTip = "TokenGlance \(strings.tokenSparklineTodayAccessibility(totalTokens))"
+    case .iconOnly:
+      statusItem.length = NSStatusItem.squareLength
+      button.title = ""
+      button.image = symbolImage()
+      button.imagePosition = .imageOnly
+      button.toolTip = "TokenGlance \(strings.totalTokensTodayAccessibility(totalTokens))"
+    case .totalToday, .lastHour, .inputToday, .outputToday:
+      let metric = menuBarMetricText(summary: summary, strings: strings)
+      statusItem.length = NSStatusItem.variableLength
+      button.title = " \(metric.label)"
+      button.image = symbolImage()
+      button.imagePosition = .imageLeading
+      button.toolTip = "TokenGlance \(metric.accessibilityText)"
+      button.sizeToFit()
+    }
+  }
+
+  private func menuBarMetricText(summary: UsageSummary?, strings: AppStrings) -> (
+    label: String, accessibilityText: String
+  ) {
+    func label(_ value: Int) -> String {
+      value.formatted(.number.notation(.compactName).precision(.fractionLength(0...1)))
+    }
+
+    switch dependencies.settings.menuBarMetric {
+    case .lastHour:
+      let tokens = summary?.buckets.last?.tokens.calculatedTotal ?? 0
+      let text = label(tokens)
+      return (text, strings.lastHourAccessibility(text))
+    case .inputToday:
+      let tokens = summary?.totals.inputTokens ?? 0
+      let text = label(tokens)
+      return (text, strings.inputTodayAccessibility(text))
+    case .outputToday:
+      let tokens = summary?.totals.outputTokens ?? 0
+      let text = label(tokens)
+      return (text, strings.outputTodayAccessibility(text))
+    case .totalToday, .sparklineToday, .iconOnly:
+      let tokens = summary?.totals.calculatedTotal ?? 0
+      return (label(tokens), strings.totalTokensTodayAccessibility(tokens))
+    }
+  }
+
+  private func symbolImage() -> NSImage? {
+    let image = NSImage(systemSymbolName: "chart.bar.xaxis", accessibilityDescription: nil)
+    image?.isTemplate = true
+    return image
   }
 
   @objc private func statusItemClicked(_ sender: NSStatusBarButton) {

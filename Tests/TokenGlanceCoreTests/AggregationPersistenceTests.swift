@@ -26,6 +26,29 @@ struct AggregationPersistenceTests {
     #expect(summary.byTool[.codexCLI]?.calculatedTotal == 30)
   }
 
+  @Test("Sparkline series uses recent bucket totals and normalizes to peak")
+  func sparklineSeriesNormalizesBucketTotals() {
+    let start = DateCoding.parseISO8601("2026-06-28T10:00:00Z")!
+    let events = [
+      event(id: "1", timestamp: start, tool: .codexCLI, model: "gpt-5", total: 10),
+      event(
+        id: "2", timestamp: start.addingTimeInterval(3600), tool: .codexCLI, model: "gpt-5",
+        total: 20),
+      event(
+        id: "3", timestamp: start.addingTimeInterval(7200), tool: .codexCLI, model: "gpt-5",
+        total: 40),
+    ]
+    var calendar = Calendar(identifier: .gregorian)
+    calendar.timeZone = TimeZone(secondsFromGMT: 0)!
+    let summary = UsageAggregator(calendar: calendar).summarize(
+      events: events, period: .last24Hours, now: start.addingTimeInterval(10_800))
+    let series = UsageSparklineSeries(summary: summary, maxPoints: 2)
+
+    #expect(series.values == [20, 40])
+    #expect(series.normalizedValues == [0.5, 1.0])
+    #expect(series.isRenderable)
+  }
+
   @Test("SQLite persistence deduplicates event IDs")
   func persistenceDeduplicates() async throws {
     let url = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
