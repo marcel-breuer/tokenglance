@@ -18,6 +18,11 @@ struct SettingsView: View {
           Text(period.localizedName(using: strings)).tag(period)
         }
       }
+      Picker(strings.menuBarMetric, selection: $dependencies.settings.menuBarMetric) {
+        ForEach(MenuBarMetric.selectableCases, id: \.self) { metric in
+          Text(metric.localizedName(using: strings)).tag(metric)
+        }
+      }
       Picker(strings.retention, selection: $dependencies.settings.retentionPeriod) {
         ForEach(RetentionPeriod.allCases, id: \.self) { period in
           Text(period.localizedName(using: strings)).tag(period)

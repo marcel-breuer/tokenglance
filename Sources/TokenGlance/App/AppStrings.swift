@@ -105,6 +105,12 @@ struct AppStrings {
       en: "\(tokens.formatted()) total tokens today")
   }
 
+  func tokenSparklineTodayAccessibility(_ tokens: Int) -> String {
+    pick(
+      de: "Tokenverlauf heute, \(tokens.formatted()) Tokens insgesamt",
+      en: "Token usage sparkline today, \(tokens.formatted()) total tokens")
+  }
+
   func lastHourAccessibility(_ label: String) -> String {
     pick(de: "\(label) Tokens in der letzten Stunde", en: "\(label) tokens in the last hour")
   }
@@ -143,6 +149,8 @@ extension MenuBarMetric {
     switch self {
     case .totalToday:
       strings.pick(de: "Tokens heute gesamt", en: "Total Tokens Today")
+    case .sparklineToday:
+      strings.pick(de: "Verlauf heute", en: "Sparkline Today")
     case .lastHour:
       strings.pick(de: "Letzte Stunde", en: "Last Hour")
     case .inputToday:

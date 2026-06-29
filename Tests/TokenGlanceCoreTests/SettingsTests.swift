@@ -38,6 +38,11 @@ struct SettingsTests {
     #expect(MenuBarMetric.selectableCases.first == .totalToday)
   }
 
+  @Test("Sparkline menu bar mode is selectable")
+  func sparklineMenuBarModeIsSelectable() {
+    #expect(MenuBarMetric.selectableCases.contains(.sparklineToday))
+  }
+
   @Test("Language setting decodes from persisted settings")
   func languageSettingDecodes() throws {
     let json = """

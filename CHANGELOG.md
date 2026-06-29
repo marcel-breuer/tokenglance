@@ -12,6 +12,7 @@
 - Added automatic release creation after pushes to `main`.
 - Preserved Codex model metadata from session records for token-count events.
 - Formatted chart axis labels without scientific notation.
+- Added a selectable tiny menu-bar sparkline for today's token usage.
 
 ## 0.1.1
 
