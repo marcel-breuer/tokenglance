@@ -3,7 +3,7 @@
 Private AI usage monitoring for the macOS menu bar.
 
 TokenGlance is a native, local-first macOS app for understanding how intensely
-your AI coding tools are working. It imports verified local token metadata,
+your AI tools are working. It imports verified local or user-provided token metadata,
 keeps everything on your machine, and turns raw usage into a compact activity
 monitor: menu-bar totals, sparkline, burn rate, Token Weather, model efficiency,
 weekly reports, and collector health.
@@ -31,6 +31,8 @@ browser data, credentials, cookies, or private provider APIs.
 - Schema Drift Radar to flag local metadata that exists but no longer matches a
   supported parser shape.
 - Collector diagnostics for supported local tools.
+- Manual CSV/JSON metadata import for ChatGPT, Claude, Gemini, and provider API
+  usage exports.
 - CSV and JSON export of normalized usage metadata.
 - Local-only storage with no account, backend, analytics, or telemetry.
 
@@ -90,6 +92,7 @@ installing.
 | Codex CLI | Yes | Yes, from verified local JSONL token metadata | Reconciliation | input, output, cached input, reasoning, total when present | Exact | No |
 | Claude Code | Yes | No by default | Telemetry parser available | input, output, cache read, cache creation | Exact when telemetry is configured | Yes |
 | Antigravity | Yes, via `agy --version` | Not yet | Not yet | Not yet verified | Unavailable until a documented local token metadata source is verified | Yes |
+| Manual import | User-selected CSV/JSON file | Yes | On demand | input, output, cached input, cache creation, reasoning, other, total | Exact for user-provided metadata | No |
 
 Codex usage is imported from local token-count metadata in:
 
@@ -101,6 +104,28 @@ Codex usage is imported from local token-count metadata in:
 Antigravity is detected safely, but TokenGlance does not read Antigravity
 conversations, logs, browser-style storage, or credentials until a documented
 local token metadata source is verified.
+
+Manual import is the supported path for broader AI usage today. TokenGlance can
+ingest metadata rows for ChatGPT, Claude, Gemini, OpenAI API, Anthropic API, and
+Google AI API without reading browser profiles, app databases, provider accounts,
+cookies, or private APIs.
+
+### Manual Usage Import
+
+Use the import button in the dashboard to select a UTF-8 CSV or JSON file with
+usage metadata. CSV headers can include:
+
+```csv
+timestamp,tool,provider,model,input_tokens,output_tokens,cached_input_tokens,cache_creation_tokens,reasoning_tokens,other_tokens,total_tokens
+2026-06-29T08:00:00Z,ChatGPT,openai,gpt-4o,120,40,10,0,0,0,170
+2026-06-29T09:00:00Z,Claude,anthropic,claude-3.7-sonnet,90,55,0,0,12,0,157
+2026-06-29T10:00:00Z,Gemini,google,gemini-2.5-pro,80,60,5,0,20,0,165
+```
+
+JSON can be either an array of event objects or an object with an `events` array.
+Only metadata fields are normalized. Raw fields such as prompts, responses,
+messages, content, or source text are ignored and are never written to
+TokenGlance's database.
 
 ## Privacy
 
@@ -135,6 +160,8 @@ TokenGlance is built around metadata-only insight:
   share, and token mix, archived locally.
 - **Schema Drift Radar**: diagnostics for local metadata records that are present
   but no longer match a supported parser.
+- **Manual AI Import**: bring your own ChatGPT, Claude, Gemini, or provider API
+  token exports into the same local analytics surface.
 
 ## Manual Installation
 
@@ -216,6 +243,7 @@ supported distribution channel for external users.
 - User-approved Claude Code telemetry setup helper.
 - User-approved Antigravity token metadata setup when a documented local source
   is verified.
+- Import templates for popular provider billing and usage exports.
 - More local report export formats.
 - Optional budget thresholds and local notifications.
 - Additional collectors only after documented local metadata sources are

@@ -173,6 +173,27 @@ final class AppDependencies: ObservableObject {
     }
   }
 
+  func importUsageMetadata(from url: URL) async {
+    do {
+      let batch = try await Task.detached(priority: .userInitiated) {
+        let hasAccess = url.startAccessingSecurityScopedResource()
+        defer {
+          if hasAccess { url.stopAccessingSecurityScopedResource() }
+        }
+        let data = try Data(contentsOf: url)
+        return try ManualUsageImportParser().parse(data, sourceName: url.lastPathComponent)
+      }.value
+      let inserted = try await database.importBatch(batch)
+      lastRefresh = Date()
+      await loadMenuBarSummary()
+      await loadSummary()
+      diagnosticsText =
+        "Imported \(inserted) manual usage events. Invalid rows: \(batch.invalidRecords)."
+    } catch {
+      diagnosticsText = Redactor().redact(error.localizedDescription)
+    }
+  }
+
   func configureLiveRefresh() {
     liveRefreshTask?.cancel()
     liveRefreshTask = nil

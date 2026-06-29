@@ -35,6 +35,9 @@ struct AppStrings {
   }
   var view: String { pick(de: "Ansicht", en: "View") }
   var refresh: String { pick(de: "Aktualisieren", en: "Refresh") }
+  var importUsageMetadata: String {
+    pick(de: "Nutzungsmetadaten importieren", en: "Import usage metadata")
+  }
   var period: String { pick(de: "Zeitraum", en: "Period") }
   var tool: String { pick(de: "Tool", en: "Tool") }
   var model: String { pick(de: "Modell", en: "Model") }

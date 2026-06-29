@@ -5,6 +5,7 @@ public enum CollectorIdentifier: String, Codable, CaseIterable, Sendable {
   case claudeCode = "claude-code"
   case antigravity = "antigravity"
   case geminiCLI = "gemini-cli"
+  case manualImport = "manual-import"
 
   public static let allCases: [CollectorIdentifier] = [
     .codexCLI,
@@ -18,6 +19,7 @@ public enum CollectorIdentifier: String, Codable, CaseIterable, Sendable {
     case .claudeCode: "Claude Code"
     case .antigravity: "Antigravity"
     case .geminiCLI: "Gemini CLI Legacy"
+    case .manualImport: "Manual Import"
     }
   }
 }
@@ -27,12 +29,40 @@ public enum ToolIdentifier: String, Codable, CaseIterable, Sendable {
   case claudeCode = "claude-code"
   case antigravity = "antigravity"
   case geminiCLI = "gemini-cli"
+  case chatGPT = "chatgpt"
+  case claude = "claude"
+  case gemini = "gemini"
+  case openAIAPI = "openai-api"
+  case anthropicAPI = "anthropic-api"
+  case googleAIAPI = "google-ai-api"
 
   public static let allCases: [ToolIdentifier] = [
     .codexCLI,
     .claudeCode,
     .antigravity,
+    .geminiCLI,
+    .chatGPT,
+    .claude,
+    .gemini,
+    .openAIAPI,
+    .anthropicAPI,
+    .googleAIAPI,
   ]
+
+  public var displayName: String {
+    switch self {
+    case .codexCLI: "Codex CLI"
+    case .claudeCode: "Claude Code"
+    case .antigravity: "Antigravity"
+    case .geminiCLI: "Gemini CLI"
+    case .chatGPT: "ChatGPT"
+    case .claude: "Claude"
+    case .gemini: "Gemini"
+    case .openAIAPI: "OpenAI API"
+    case .anthropicAPI: "Anthropic API"
+    case .googleAIAPI: "Google AI API"
+    }
+  }
 }
 
 public enum ProviderIdentifier: String, Codable, Sendable {
@@ -44,6 +74,7 @@ public enum ProviderIdentifier: String, Codable, Sendable {
 public enum SourceKind: String, Codable, Sendable {
   case localJSONL = "local-jsonl"
   case localTelemetry = "local-telemetry"
+  case manualImport = "manual-import"
   case otlpHTTP = "otlp-http"
   case unsupported = "unsupported"
 }
