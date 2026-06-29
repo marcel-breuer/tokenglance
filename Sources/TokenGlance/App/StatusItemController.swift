@@ -61,9 +61,10 @@ final class StatusItemController: NSObject, ObservableObject {
     let strings = AppStrings(dependencies.settings.language)
     let summary = dependencies.menuBarSummary
     let totalTokens = summary?.totals.calculatedTotal ?? 0
-    let pulseTooltip = strings.menuBarPulseTooltip(
+    let pulseTooltip = strings.menuBarAnalyticsTooltip(
       totalTokens: totalTokens,
-      pulse: dependencies.usagePulse
+      pulse: dependencies.usagePulse,
+      summary: summary
     )
     let tooltip = "TokenGlance \(pulseTooltip)"
 

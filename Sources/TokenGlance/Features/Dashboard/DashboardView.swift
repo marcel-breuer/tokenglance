@@ -53,7 +53,7 @@ struct DashboardView: View {
 
       Button {
         Task {
-          let report = await dependencies.weeklyReportMarkdown()
+          let report = await dependencies.archiveWeeklyReport()
           NSPasteboard.general.clearContents()
           NSPasteboard.general.setString(report, forType: .string)
         }
@@ -61,7 +61,7 @@ struct DashboardView: View {
         Image(systemName: "calendar.badge.clock")
       }
       .buttonStyle(.borderless)
-      .help(strings.weeklyReport)
+      .help(strings.archiveWeeklyReport)
       .accessibilityIdentifier("weekly-report-button")
 
       Button {
@@ -99,6 +99,7 @@ struct DashboardView: View {
         totalsPanel
         pulsePanel
         usageChart
+        modelEfficiencyPanel
         collectorModules
         breakdownColumns
       }
@@ -271,6 +272,37 @@ struct DashboardView: View {
     .background(.background.secondary, in: RoundedRectangle(cornerRadius: 8))
   }
 
+  private var modelEfficiencyPanel: some View {
+    VStack(alignment: .leading, spacing: 8) {
+      HStack {
+        Label(strings.modelEfficiency, systemImage: "gauge.with.dots.needle.67percent")
+          .font(.headline)
+        Spacer()
+        if !dependencies.settings.modelCostProfiles.isEmpty {
+          Text(strings.estimated)
+            .font(.caption2)
+            .foregroundStyle(.secondary)
+        }
+      }
+
+      if dependencies.modelEfficiencyRows.isEmpty {
+        Text(strings.noExactUsage)
+          .foregroundStyle(.secondary)
+          .font(.caption)
+      } else {
+        ForEach(Array(dependencies.modelEfficiencyRows.prefix(5))) { row in
+          ModelEfficiencyRowView(row: row, strings: strings)
+          if row.id != dependencies.modelEfficiencyRows.prefix(5).last?.id {
+            Divider()
+          }
+        }
+      }
+    }
+    .padding(12)
+    .background(.background.secondary, in: RoundedRectangle(cornerRadius: 8))
+    .accessibilityIdentifier("model-efficiency-panel")
+  }
+
   private var breakdownColumns: some View {
     HStack(alignment: .top, spacing: 10) {
       BreakdownList(
@@ -418,6 +450,44 @@ private struct WeatherBadge: View {
     case .active: .orange
     case .stormy: .red
     }
+  }
+}
+
+private struct ModelEfficiencyRowView: View {
+  let row: ModelEfficiencyRow
+  let strings: AppStrings
+
+  var body: some View {
+    HStack(alignment: .center, spacing: 10) {
+      VStack(alignment: .leading, spacing: 2) {
+        Text(row.model)
+          .font(.caption.weight(.semibold))
+          .lineLimit(1)
+        Text(
+          "\(row.eventCount) events · \(strings.average) \(TokenNumberFormat.compact(row.averageTokensPerEvent))"
+        )
+        .font(.caption2)
+        .foregroundStyle(.secondary)
+      }
+      Spacer()
+      VStack(alignment: .trailing, spacing: 2) {
+        Text(TokenNumberFormat.compact(row.tokens.calculatedTotal))
+          .font(.caption.monospacedDigit().weight(.semibold))
+        Text(detailText)
+          .font(.caption2)
+          .foregroundStyle(.secondary)
+      }
+    }
+  }
+
+  private var detailText: String {
+    let cache = row.cacheShare.formatted(.percent.precision(.fractionLength(0...1)))
+    let reasoning = row.reasoningShare.formatted(.percent.precision(.fractionLength(0...1)))
+    let cost =
+      row.estimatedCost.map {
+        $0.formatted(.currency(code: "USD").precision(.fractionLength(2...4)))
+      } ?? "n/a"
+    return "cache \(cache) · reasoning \(reasoning) · \(cost)"
   }
 }
 

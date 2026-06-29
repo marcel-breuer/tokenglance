@@ -60,6 +60,18 @@ struct AppStrings {
   var diagnostics: String { pick(de: "Diagnose", en: "Diagnostics") }
   var copy: String { pick(de: "Kopieren", en: "Copy") }
   var weeklyReport: String { pick(de: "Wochenbericht", en: "Weekly report") }
+  var archiveWeeklyReport: String {
+    pick(de: "Wochenbericht archivieren", en: "Archive weekly report")
+  }
+  var modelEfficiency: String { pick(de: "Modell-Effizienz", en: "Model Efficiency") }
+  var costProfiles: String { pick(de: "Kostenprofile", en: "Cost Profiles") }
+  var addCostProfile: String { pick(de: "Kostenprofil hinzufügen", en: "Add cost profile") }
+  var modelPattern: String { pick(de: "Modellmuster", en: "Model pattern") }
+  var inputCost: String { pick(de: "Input $/M", en: "Input $/M") }
+  var outputCost: String { pick(de: "Output $/M", en: "Output $/M") }
+  var cachedCost: String { pick(de: "Cache $/M", en: "Cache $/M") }
+  var estimated: String { pick(de: "geschätzt", en: "estimated") }
+  var average: String { pick(de: "Ø", en: "avg") }
   var diagnosticsUnavailable: String {
     pick(de: "Diagnose ist noch nicht verfügbar.", en: "Diagnostics are not available yet.")
   }
@@ -146,8 +158,58 @@ struct AppStrings {
     )
   }
 
+  func menuBarAnalyticsTooltip(totalTokens: Int, pulse: UsagePulse, summary: UsageSummary?)
+    -> String
+  {
+    let base = menuBarPulseTooltip(totalTokens: totalTokens, pulse: pulse)
+    let peak = peakHourText(summary)
+    let topModel = topModelText(summary)
+    let cache = cacheShareText(summary?.totals)
+    return pick(
+      de: "\(base)\nPeak: \(peak)\nTop-Modell: \(topModel)\nCache-Anteil: \(cache)",
+      en: "\(base)\nPeak: \(peak)\nTop model: \(topModel)\nCache share: \(cache)"
+    )
+  }
+
+  func costProfileDescription(_ count: Int) -> String {
+    pick(
+      de: count == 0
+        ? "Füge lokale Preisprofile hinzu, um Kosten in Effizienzansichten zu schätzen."
+        : "\(count) lokale Preisprofile aktiv.",
+      en: count == 0
+        ? "Add local price profiles to estimate costs in efficiency views."
+        : "\(count) local price profiles active."
+    )
+  }
+
   private func compactTokens(_ value: Int) -> String {
     value.formatted(.number.notation(.compactName).precision(.fractionLength(0...1)))
+  }
+
+  private func peakHourText(_ summary: UsageSummary?) -> String {
+    guard
+      let bucket = summary?.buckets.max(by: {
+        $0.tokens.calculatedTotal < $1.tokens.calculatedTotal
+      }), bucket.tokens.calculatedTotal > 0
+    else { return pick(de: "keine Nutzung", en: "no usage") }
+    let time = bucket.start.formatted(date: .omitted, time: .shortened)
+    return "\(time), \(compactTokens(bucket.tokens.calculatedTotal))"
+  }
+
+  private func topModelText(_ summary: UsageSummary?) -> String {
+    guard
+      let row = summary?.byModel.max(by: { $0.value.calculatedTotal < $1.value.calculatedTotal })
+    else { return pick(de: "kein Modell", en: "no model") }
+    return "\(row.key) \(compactTokens(row.value.calculatedTotal))"
+  }
+
+  private func cacheShareText(_ totals: TokenBreakdown?) -> String {
+    guard let totals else { return "0%" }
+    let total = totals.calculatedTotal
+    guard total > 0 else { return "0%" }
+    let cached = (totals.cachedInputTokens ?? 0) + (totals.cacheCreationTokens ?? 0)
+    let share = Double(cached) / Double(total)
+    return share.formatted(.percent.precision(.fractionLength(0...1)))
   }
 
   func pick(de: String, en: String) -> String {

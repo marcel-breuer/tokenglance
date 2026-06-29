@@ -23,6 +23,7 @@ struct SettingsTests {
     #expect(settings.liveRefreshIntervalSeconds == 5)
     #expect(settings.enabledCollectors == [.codexCLI])
     #expect(settings.language == .system)
+    #expect(settings.modelCostProfiles.isEmpty)
   }
 
   @Test("Legacy icon-only menu bar mode decodes but is not selectable")
@@ -52,5 +53,24 @@ struct SettingsTests {
       """
     let settings = try JSONDecoder().decode(AppSettings.self, from: Data(json.utf8))
     #expect(settings.language == .german)
+  }
+
+  @Test("Cost profiles decode from persisted settings")
+  func costProfilesDecode() throws {
+    let json = """
+      {
+        "modelCostProfiles": [
+          {
+            "modelPattern": "gpt",
+            "inputCostPerMillion": 2.0,
+            "outputCostPerMillion": 10.0,
+            "cachedInputCostPerMillion": 0.5
+          }
+        ]
+      }
+      """
+    let settings = try JSONDecoder().decode(AppSettings.self, from: Data(json.utf8))
+    #expect(settings.modelCostProfiles.count == 1)
+    #expect(settings.modelCostProfiles[0].matches(model: "gpt-5"))
   }
 }

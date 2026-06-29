@@ -8,8 +8,11 @@ final class AppDependencies: ObservableObject {
   let settingsStore = SettingsStore()
   let aggregator = UsageAggregator()
   let pulseAnalyzer = UsagePulseAnalyzer()
+  let modelEfficiencyAnalyzer = ModelEfficiencyAnalyzer()
+  let schemaDriftRadar = SchemaDriftRadar()
   let diagnosticsBuilder = DiagnosticsBuilder()
   let weeklyReportBuilder = WeeklyUsageReportBuilder()
+  let reportArchive = LocalReportArchive()
   let updateRelaunchMonitor = UpdateRelaunchMonitor()
   let collectors: [any UsageCollector]
 
@@ -18,8 +21,10 @@ final class AppDependencies: ObservableObject {
   @Published var summary: UsageSummary?
   @Published var menuBarSummary: UsageSummary?
   @Published var usagePulse = UsagePulse.empty
+  @Published var modelEfficiencyRows: [ModelEfficiencyRow] = []
   @Published var diagnosticsText = ""
   @Published var collectorDiagnostics: [CollectorDiagnostic] = []
+  @Published var lastArchivedReportURL: URL?
   @Published var selectedPeriod: ReportingPeriod = .today
   @Published var selectedTool: ToolIdentifier?
   @Published var selectedModel: String?
@@ -66,8 +71,9 @@ final class AppDependencies: ObservableObject {
 
     var diagnostics: [CollectorDiagnostic] = []
     for collector in collectors where settings.enabledCollectors.contains(collector.identifier) {
+      var batch = CollectionBatch(events: [])
       do {
-        let batch = try await collector.collect(since: nil)
+        batch = try await collector.collect(since: nil)
         _ = try await database.importBatch(batch)
       } catch {
         diagnostics.append(
@@ -81,7 +87,8 @@ final class AppDependencies: ObservableObject {
             lastNonSensitiveError: Redactor().redact(error.localizedDescription)
           ))
       }
-      diagnostics.append(await collector.diagnose())
+      let baseDiagnostic = await collector.diagnose()
+      diagnostics.append(schemaDriftRadar.diagnose(base: baseDiagnostic, batch: batch))
     }
 
     collectorDiagnostics = diagnostics
@@ -101,8 +108,12 @@ final class AppDependencies: ObservableObject {
         period: selectedPeriod,
         toolFilter: selectedTool,
         modelFilter: selectedModel)
+      let efficiencyRows = modelEfficiencyAnalyzer.analyze(
+        events: events,
+        costProfiles: settings.modelCostProfiles)
       withAnimation(.snappy(duration: 0.25)) {
         summary = nextSummary
+        modelEfficiencyRows = efficiencyRows
       }
     } catch {
       diagnosticsText = Redactor().redact(error.localizedDescription)
@@ -127,7 +138,10 @@ final class AppDependencies: ObservableObject {
 
   func saveSettings() {
     configureLiveRefresh()
-    Task { try? await settingsStore.save(settings) }
+    Task {
+      try? await settingsStore.save(settings)
+      await loadSummary()
+    }
   }
 
   func deleteAllData() {
@@ -143,6 +157,17 @@ final class AppDependencies: ObservableObject {
     do {
       let reportEvents = try await database.fetchEvents(from: interval.start, to: interval.end)
       return weeklyReportBuilder.markdown(events: reportEvents)
+    } catch {
+      return Redactor().redact(error.localizedDescription)
+    }
+  }
+
+  func archiveWeeklyReport() async -> String {
+    let markdown = await weeklyReportMarkdown()
+    do {
+      let url = try reportArchive.saveWeeklyReport(markdown)
+      lastArchivedReportURL = url
+      return markdown
     } catch {
       return Redactor().redact(error.localizedDescription)
     }
