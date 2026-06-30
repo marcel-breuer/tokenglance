@@ -30,6 +30,7 @@ final class StatusItemController: NSObject, ObservableObject {
   }
 
   private func configureStatusItem() {
+    statusItem.autosaveName = "dev.marcelbreuer.tokenglance.statusItem"
     guard let button = statusItem.button else { return }
     button.image = symbolImage()
     button.imagePosition = .imageLeading
