@@ -41,17 +41,23 @@ public struct DiagnosticsBuilder: Sendable {
   public func build(database: UsageDatabase, collectors: [any UsageCollector]) async
     -> DiagnosticsReport
   {
-    let schema = (try? await database.schemaVersion()) ?? 0
     var diagnostics: [CollectorDiagnostic] = []
     for collector in collectors {
       diagnostics.append(await collector.diagnose())
     }
+    return await build(database: database, collectorDiagnostics: diagnostics)
+  }
+
+  public func build(database: UsageDatabase, collectorDiagnostics: [CollectorDiagnostic]) async
+    -> DiagnosticsReport
+  {
+    let schema = (try? await database.schemaVersion()) ?? 0
     return DiagnosticsReport(
       appVersion: AppIdentity.version,
       macOSVersion: ProcessInfo.processInfo.operatingSystemVersionString,
       architecture: ProcessInfo.processInfo.machineHardwareName,
       databaseSchemaVersion: schema,
-      collectors: diagnostics
+      collectors: collectorDiagnostics
     )
   }
 }

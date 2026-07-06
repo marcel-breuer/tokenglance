@@ -49,8 +49,9 @@ struct SettingsView: View {
         Stepper(
           strings.everySeconds(Int(dependencies.settings.liveRefreshIntervalSeconds)),
           value: $dependencies.settings.liveRefreshIntervalSeconds,
-          in: 2...60,
-          step: 1
+          in: AppSettings
+            .minimumLiveRefreshIntervalSeconds...AppSettings.maximumLiveRefreshIntervalSeconds,
+          step: 15
         )
         .disabled(!dependencies.settings.liveRefreshEnabled)
         Text(strings.autoRefreshDescription)

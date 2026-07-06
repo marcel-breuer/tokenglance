@@ -63,32 +63,37 @@ public struct CodexCLICollector: UsageCollector {
     )
   }
 
-  public func collect(since cursor: CollectionCursor?) async throws -> CollectionBatch {
+  public func collect(since cursors: [CollectionCursor]) async throws -> CollectionBatch {
     try Task.checkCancellation()
     let files = try sourceFiles()
+    let knownOffsets = Dictionary(uniqueKeysWithValues: cursors.map { ($0.sourceFingerprint, $0) })
     var allEvents: [UsageEvent] = []
-    var cursors: [CollectionCursor] = []
+    var nextCursors: [CollectionCursor] = []
     var invalid = 0
 
     for file in files {
       try Task.checkCancellation()
       guard let resolved = try? safeResolvedFile(file) else { continue }
       let fingerprint = Hashing.sha256(resolved.path)
+      let fileSize = try resolved.resourceValues(forKeys: [.fileSizeKey]).fileSize ?? 0
+      if let cursor = knownOffsets[fingerprint], cursor.offset == UInt64(fileSize) {
+        nextCursors.append(cursor)
+        continue
+      }
       let handle = try FileHandle(forReadingFrom: resolved)
       defer { try? handle.close() }
 
-      let startOffset = cursor?.sourceFingerprint == fingerprint ? cursor?.offset ?? 0 : 0
-      try handle.seek(toOffset: startOffset)
       let data = try handle.readToEnd() ?? Data()
       let batch = parser.parseJSONLines(data, sourceFingerprint: fingerprint)
       allEvents.append(contentsOf: batch.events)
       invalid += batch.invalidRecords
       let endOffset = try handle.offset()
-      cursors.append(CollectionCursor(sourceFingerprint: fingerprint, offset: endOffset))
+      nextCursors.append(CollectionCursor(sourceFingerprint: fingerprint, offset: endOffset))
     }
 
     return CollectionBatch(
-      events: allEvents, cursors: cursors, importedRecords: allEvents.count, invalidRecords: invalid
+      events: allEvents, cursors: nextCursors, importedRecords: allEvents.count,
+      invalidRecords: invalid
     )
   }
 
@@ -180,8 +185,8 @@ public struct ClaudeCodeCollector: UsageCollector {
     )
   }
 
-  public func collect(since cursor: CollectionCursor?) async throws -> CollectionBatch {
-    _ = cursor
+  public func collect(since cursors: [CollectionCursor]) async throws -> CollectionBatch {
+    _ = cursors
     return CollectionBatch(events: [], importedRecords: 0)
   }
 
@@ -236,8 +241,8 @@ public struct AntigravityCollector: UsageCollector {
     )
   }
 
-  public func collect(since cursor: CollectionCursor?) async throws -> CollectionBatch {
-    _ = cursor
+  public func collect(since cursors: [CollectionCursor]) async throws -> CollectionBatch {
+    _ = cursors
     return CollectionBatch(events: [], importedRecords: 0)
   }
 

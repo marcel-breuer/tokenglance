@@ -35,6 +35,11 @@ final class AppDependencies: ObservableObject {
   private var hasStarted = false
   private var liveRefreshTask: Task<Void, Never>?
 
+  private enum RefreshMode {
+    case full
+    case live
+  }
+
   deinit {
     liveRefreshTask?.cancel()
   }
@@ -55,7 +60,7 @@ final class AppDependencies: ObservableObject {
         settings = try await settingsStore.load()
         selectedPeriod = settings.defaultReportingPeriod
         try await database.open()
-        await refresh()
+        await refresh(mode: .full)
         configureLiveRefresh()
         updateRelaunchMonitor.start()
       } catch {
@@ -65,41 +70,54 @@ final class AppDependencies: ObservableObject {
   }
 
   func refresh() async {
+    await refresh(mode: .full)
+  }
+
+  private func refresh(mode: RefreshMode) async {
     guard !isRefreshing else { return }
     isRefreshing = true
     defer { isRefreshing = false }
 
     var diagnostics: [CollectorDiagnostic] = []
+    let cursors = (try? await database.collectionCursors()) ?? []
+    let shouldUpdateDiagnostics = mode == .full
     for collector in collectors where settings.enabledCollectors.contains(collector.identifier) {
       var batch = CollectionBatch(events: [])
       do {
-        batch = try await collector.collect(since: nil)
+        batch = try await collector.collect(since: cursors)
         _ = try await database.importBatch(batch)
       } catch {
-        diagnostics.append(
-          CollectorDiagnostic(
-            identifier: collector.identifier,
-            status: .parserError,
-            sourceKind: .unsupported,
-            parserVersion: "unknown",
-            explanation: "Collection failed without exposing source content.",
-            detectedVersion: nil,
-            lastNonSensitiveError: Redactor().redact(error.localizedDescription)
-          ))
+        if shouldUpdateDiagnostics {
+          diagnostics.append(
+            CollectorDiagnostic(
+              identifier: collector.identifier,
+              status: .parserError,
+              sourceKind: .unsupported,
+              parserVersion: "unknown",
+              explanation: "Collection failed without exposing source content.",
+              detectedVersion: nil,
+              lastNonSensitiveError: Redactor().redact(error.localizedDescription)
+            ))
+        }
       }
-      let baseDiagnostic = await collector.diagnose()
-      diagnostics.append(schemaDriftRadar.diagnose(base: baseDiagnostic, batch: batch))
+      if shouldUpdateDiagnostics {
+        let baseDiagnostic = await collector.diagnose()
+        diagnostics.append(schemaDriftRadar.diagnose(base: baseDiagnostic, batch: batch))
+      }
     }
 
-    collectorDiagnostics = diagnostics
     lastRefresh = Date()
     await loadMenuBarSummary()
-    await loadSummary()
-    let report = await diagnosticsBuilder.build(database: database, collectors: collectors)
-    diagnosticsText = report.text()
+    await loadSummary(animated: mode == .full)
+    if shouldUpdateDiagnostics {
+      collectorDiagnostics = diagnostics
+      let report = await diagnosticsBuilder.build(
+        database: database, collectorDiagnostics: diagnostics)
+      diagnosticsText = report.text()
+    }
   }
 
-  func loadSummary() async {
+  func loadSummary(animated: Bool = true) async {
     let interval = aggregator.interval(for: selectedPeriod)
     do {
       events = try await database.fetchEvents(from: interval.start, to: interval.end)
@@ -111,7 +129,12 @@ final class AppDependencies: ObservableObject {
       let efficiencyRows = modelEfficiencyAnalyzer.analyze(
         events: events,
         costProfiles: settings.modelCostProfiles)
-      withAnimation(.snappy(duration: 0.25)) {
+      if animated {
+        withAnimation(.snappy(duration: 0.25)) {
+          summary = nextSummary
+          modelEfficiencyRows = efficiencyRows
+        }
+      } else {
         summary = nextSummary
         modelEfficiencyRows = efficiencyRows
       }
@@ -137,6 +160,8 @@ final class AppDependencies: ObservableObject {
   }
 
   func saveSettings() {
+    settings.liveRefreshIntervalSeconds = AppSettings.clampedLiveRefreshInterval(
+      settings.liveRefreshIntervalSeconds)
     configureLiveRefresh()
     Task {
       try? await settingsStore.save(settings)
@@ -201,7 +226,7 @@ final class AppDependencies: ObservableObject {
 
     guard settings.liveRefreshEnabled else { return }
     isLiveRefreshRunning = true
-    let interval = max(settings.liveRefreshIntervalSeconds, 2)
+    let interval = AppSettings.clampedLiveRefreshInterval(settings.liveRefreshIntervalSeconds)
 
     liveRefreshTask = Task { [weak self] in
       while !Task.isCancelled {
@@ -210,7 +235,7 @@ final class AppDependencies: ObservableObject {
         } catch {
           break
         }
-        await self?.refresh()
+        await self?.refresh(mode: .live)
       }
       await MainActor.run {
         self?.isLiveRefreshRunning = false

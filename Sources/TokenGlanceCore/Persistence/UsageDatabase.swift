@@ -89,6 +89,24 @@ public actor UsageDatabase {
     try execute("VACUUM")
   }
 
+  public func collectionCursors() throws -> [CollectionCursor] {
+    try ensureOpen()
+    let statement = try prepare(
+      "SELECT source_fingerprint, offset, updated_at FROM collection_cursors ORDER BY source_fingerprint"
+    )
+    defer { sqlite3_finalize(statement) }
+    var cursors: [CollectionCursor] = []
+    while sqlite3_step(statement) == SQLITE_ROW {
+      cursors.append(
+        CollectionCursor(
+          sourceFingerprint: columnString(statement, 0) ?? "",
+          offset: UInt64(sqlite3_column_int64(statement, 1)),
+          updatedAt: Date(timeIntervalSince1970: sqlite3_column_double(statement, 2))
+        ))
+    }
+    return cursors
+  }
+
   public func close() {
     if let db {
       sqlite3_close(db)
