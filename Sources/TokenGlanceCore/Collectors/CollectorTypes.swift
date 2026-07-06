@@ -125,6 +125,6 @@ public protocol UsageCollector: Sendable {
   var capabilities: CollectorCapabilities { get }
 
   func detect() async -> CollectorDetectionResult
-  func collect(since cursor: CollectionCursor?) async throws -> CollectionBatch
+  func collect(since cursors: [CollectionCursor]) async throws -> CollectionBatch
   func diagnose() async -> CollectorDiagnostic
 }

@@ -94,6 +94,10 @@ public struct ModelCostProfile: Codable, Equatable, Identifiable, Sendable {
 }
 
 public struct AppSettings: Codable, Equatable, Sendable {
+  public static let defaultLiveRefreshIntervalSeconds: TimeInterval = 60
+  public static let minimumLiveRefreshIntervalSeconds: TimeInterval = 30
+  public static let maximumLiveRefreshIntervalSeconds: TimeInterval = 300
+
   public var enabledCollectors: Set<CollectorIdentifier>
   public var refreshIntervalSeconds: TimeInterval
   public var liveRefreshEnabled: Bool
@@ -110,7 +114,7 @@ public struct AppSettings: Codable, Equatable, Sendable {
     enabledCollectors: Set<CollectorIdentifier> = Set(CollectorIdentifier.allCases),
     refreshIntervalSeconds: TimeInterval = 300,
     liveRefreshEnabled: Bool = true,
-    liveRefreshIntervalSeconds: TimeInterval = 5,
+    liveRefreshIntervalSeconds: TimeInterval = Self.defaultLiveRefreshIntervalSeconds,
     menuBarMetric: MenuBarMetric = .usageStrip,
     defaultReportingPeriod: ReportingPeriod = .today,
     launchAtLogin: Bool = false,
@@ -122,7 +126,7 @@ public struct AppSettings: Codable, Equatable, Sendable {
     self.enabledCollectors = enabledCollectors
     self.refreshIntervalSeconds = refreshIntervalSeconds
     self.liveRefreshEnabled = liveRefreshEnabled
-    self.liveRefreshIntervalSeconds = liveRefreshIntervalSeconds
+    self.liveRefreshIntervalSeconds = Self.clampedLiveRefreshInterval(liveRefreshIntervalSeconds)
     self.menuBarMetric = menuBarMetric
     self.defaultReportingPeriod = defaultReportingPeriod
     self.launchAtLogin = launchAtLogin
@@ -156,7 +160,9 @@ public struct AppSettings: Codable, Equatable, Sendable {
     self.liveRefreshEnabled =
       try container.decodeIfPresent(Bool.self, forKey: .liveRefreshEnabled) ?? true
     self.liveRefreshIntervalSeconds =
-      try container.decodeIfPresent(TimeInterval.self, forKey: .liveRefreshIntervalSeconds) ?? 5
+      Self.clampedLiveRefreshInterval(
+        try container.decodeIfPresent(TimeInterval.self, forKey: .liveRefreshIntervalSeconds)
+          ?? Self.defaultLiveRefreshIntervalSeconds)
     self.menuBarMetric =
       try container.decodeIfPresent(MenuBarMetric.self, forKey: .menuBarMetric) ?? .usageStrip
     self.defaultReportingPeriod =
@@ -169,6 +175,10 @@ public struct AppSettings: Codable, Equatable, Sendable {
       try container.decodeIfPresent([ModelCostProfile].self, forKey: .modelCostProfiles) ?? []
     self.hasCompletedOnboarding =
       try container.decodeIfPresent(Bool.self, forKey: .hasCompletedOnboarding) ?? false
+  }
+
+  public static func clampedLiveRefreshInterval(_ interval: TimeInterval) -> TimeInterval {
+    min(max(interval, minimumLiveRefreshIntervalSeconds), maximumLiveRefreshIntervalSeconds)
   }
 }
 

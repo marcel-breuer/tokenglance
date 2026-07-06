@@ -20,11 +20,24 @@ struct SettingsTests {
       """
     let settings = try JSONDecoder().decode(AppSettings.self, from: Data(json.utf8))
     #expect(settings.liveRefreshEnabled)
-    #expect(settings.liveRefreshIntervalSeconds == 5)
+    #expect(settings.liveRefreshIntervalSeconds == AppSettings.defaultLiveRefreshIntervalSeconds)
     #expect(settings.enabledCollectors == [.codexCLI])
     #expect(settings.menuBarMetric == .totalToday)
     #expect(settings.language == .system)
     #expect(settings.modelCostProfiles.isEmpty)
+  }
+
+  @Test("Persisted live refresh intervals are clamped to energy conscious bounds")
+  func liveRefreshIntervalClampsToEnergyBounds() throws {
+    let fast = try JSONDecoder().decode(
+      AppSettings.self,
+      from: Data(#"{"liveRefreshIntervalSeconds":5}"#.utf8))
+    let slow = try JSONDecoder().decode(
+      AppSettings.self,
+      from: Data(#"{"liveRefreshIntervalSeconds":600}"#.utf8))
+
+    #expect(fast.liveRefreshIntervalSeconds == AppSettings.minimumLiveRefreshIntervalSeconds)
+    #expect(slow.liveRefreshIntervalSeconds == AppSettings.maximumLiveRefreshIntervalSeconds)
   }
 
   @Test("Missing menu bar mode defaults to usage strip")

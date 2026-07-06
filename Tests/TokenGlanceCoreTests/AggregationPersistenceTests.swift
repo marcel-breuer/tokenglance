@@ -82,6 +82,23 @@ struct AggregationPersistenceTests {
     #expect(events.count == 1)
     #expect(events[0].model == "gpt-5.4")
   }
+
+  @Test("SQLite persistence returns stored collection cursors")
+  func persistenceReturnsCollectionCursors() async throws {
+    let url = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+      .appendingPathComponent("db.sqlite")
+    let database = UsageDatabase(url: url)
+    try await database.open()
+
+    let cursor = CollectionCursor(
+      sourceFingerprint: "source-a",
+      offset: 42,
+      updatedAt: Date(timeIntervalSince1970: 1_803_000_000))
+    _ = try await database.importBatch(CollectionBatch(events: [], cursors: [cursor]))
+
+    let cursors = try await database.collectionCursors()
+    #expect(cursors == [cursor])
+  }
 }
 
 private func event(id: String, timestamp: Date, tool: ToolIdentifier, model: String?, total: Int)
