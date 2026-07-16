@@ -76,6 +76,17 @@ struct AppStrings {
       de: "Keine Projektmetadaten in den verfügbaren Nutzungsdaten gefunden.",
       en: "No project metadata found in the available usage data.")
   }
+  var anomalyDetection: String {
+    pick(de: "Ungewöhnliche Spitzen", en: "Anomaly Detection")
+  }
+  var anomalyPrivacyHint: String {
+    pick(de: "nur Token-Metadaten", en: "token metadata only")
+  }
+  var noAnomalies: String {
+    pick(
+      de: "Keine ungewöhnlichen Token-Spitzen im gewählten Zeitraum.",
+      en: "No unusual token spikes in the selected period.")
+  }
   var costProfiles: String { pick(de: "Kostenprofile", en: "Cost Profiles") }
   var addCostProfile: String { pick(de: "Kostenprofil hinzufügen", en: "Add cost profile") }
   var modelPattern: String { pick(de: "Modellmuster", en: "Model pattern") }
@@ -204,6 +215,31 @@ struct AppStrings {
     return pick(
       de: "\(count) Ereignisse · zuletzt \(date)",
       en: "\(count) events · last used \(date)")
+  }
+
+  func anomalySummary(_ anomaly: UsageAnomaly) -> String {
+    let time = anomaly.start.formatted(date: .omitted, time: .shortened)
+    let multiplier = anomaly.multiplier.formatted(
+      .number.precision(.fractionLength(1...1)))
+    let tokens = compactTokens(anomaly.tokens)
+    let severity =
+      anomaly.severity == .significant
+      ? pick(de: "stark", en: "significant")
+      : pick(de: "auffällig", en: "notable")
+    return pick(
+      de: "\(severity): \(time) · \(multiplier)× Baseline · \(tokens) Tokens",
+      en: "\(severity): \(time) · \(multiplier)× baseline · \(tokens) tokens")
+  }
+
+  func anomalyContext(_ anomaly: UsageAnomaly) -> String {
+    let baseline = compactTokens(anomaly.baselineTokens)
+    let tool =
+      anomaly.topTool?.displayName
+      ?? pick(de: "unbekanntes Tool", en: "unknown tool")
+    let model = anomaly.topModel.map { " · \($0)" } ?? ""
+    return pick(
+      de: "Baseline \(baseline) · \(tool)\(model)",
+      en: "Baseline \(baseline) · \(tool)\(model)")
   }
 
   private func compactTokens(_ value: Int) -> String {

@@ -7,6 +7,11 @@ directory, or project identifier, TokenGlance stores only a salted hash in
 `projectIdentifierHash`. Project usage views use a short prefix of that hash as
 the display label; readable paths and project names are never persisted.
 
+Anomaly detection compares each non-empty hourly or daily usage bucket with the
+median of up to six preceding non-empty buckets. It reports a spike only when
+usage is at least twice the baseline and at least 1,000 tokens higher. No raw
+conversation content participates in the calculation.
+
 Token fields are optional because providers expose different categories. Category totals exclude unavailable fields and never estimate tokens from text length.
 
 Manual imports use the same `UsageEvent` shape with `collector = manual-import`
