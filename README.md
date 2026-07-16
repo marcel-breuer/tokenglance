@@ -21,6 +21,8 @@ browser data, credentials, cookies, or private provider APIs.
   app updates.
 - Always-on menu-bar Usage Strip with a compact sparkline, weather color, and
   today's token total visible without opening the dashboard.
+- Local anomaly detection that highlights unusual hourly or daily token spikes
+  against recent usage history.
 - Tooltip details for peak hour, top model, cache share, burn rate, and
   projected daily usage.
 - Token Weather for current usage intensity: calm, active, or stormy.
@@ -164,6 +166,8 @@ TokenGlance is built around metadata-only insight:
   share, reasoning share, and optional cost estimates.
 - **Project Usage**: usage grouped by locally hashed project metadata, with
   stable privacy-safe labels and optional cost totals.
+- **Anomaly Detection**: unusual hourly or daily token spikes compared with
+  recent local usage buckets, without reading prompts or responses.
 - **Cost Profiles**: local user-defined model pricing; no billing API or cloud
   account required.
 - **Weekly Reports**: Markdown reports with trends, peak hour, top models, cache

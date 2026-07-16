@@ -115,6 +115,7 @@ struct DashboardView: View {
         totalsPanel
         pulsePanel
         usageChart
+        anomaliesPanel
         modelEfficiencyPanel
         projectUsagePanel
         collectorModules
@@ -349,6 +350,35 @@ struct DashboardView: View {
     .accessibilityIdentifier("model-efficiency-panel")
   }
 
+  private var anomaliesPanel: some View {
+    VStack(alignment: .leading, spacing: 8) {
+      HStack {
+        Label(strings.anomalyDetection, systemImage: "waveform.path.ecg.rectangle")
+          .font(.headline)
+        Spacer()
+        Text(strings.anomalyPrivacyHint)
+          .font(.caption2)
+          .foregroundStyle(.secondary)
+      }
+
+      if dependencies.usageAnomalies.isEmpty {
+        Text(strings.noAnomalies)
+          .foregroundStyle(.secondary)
+          .font(.caption)
+      } else {
+        ForEach(Array(dependencies.usageAnomalies.prefix(5))) { anomaly in
+          UsageAnomalyRowView(anomaly: anomaly, strings: strings)
+          if anomaly.id != dependencies.usageAnomalies.prefix(5).last?.id {
+            Divider()
+          }
+        }
+      }
+    }
+    .padding(12)
+    .background(.background.secondary, in: RoundedRectangle(cornerRadius: 8))
+    .accessibilityIdentifier("usage-anomalies-panel")
+  }
+
   private var breakdownColumns: some View {
     HStack(alignment: .top, spacing: 10) {
       BreakdownList(
@@ -570,6 +600,32 @@ private struct ProjectUsageRowView: View {
             .foregroundStyle(.secondary)
         }
       }
+    }
+    .padding(.vertical, 4)
+  }
+}
+
+private struct UsageAnomalyRowView: View {
+  let anomaly: UsageAnomaly
+  let strings: AppStrings
+
+  var body: some View {
+    HStack(alignment: .center, spacing: 10) {
+      Image(
+        systemName: anomaly.severity == .significant
+          ? "exclamationmark.triangle.fill" : "exclamationmark.circle.fill"
+      )
+      .foregroundStyle(anomaly.severity == .significant ? .red : .orange)
+      .frame(width: 18)
+      VStack(alignment: .leading, spacing: 2) {
+        Text(strings.anomalySummary(anomaly))
+          .font(.caption.weight(.semibold))
+        Text(strings.anomalyContext(anomaly))
+          .font(.caption2)
+          .foregroundStyle(.secondary)
+          .lineLimit(1)
+      }
+      Spacer()
     }
     .padding(.vertical, 4)
   }
