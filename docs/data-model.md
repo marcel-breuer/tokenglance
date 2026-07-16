@@ -2,6 +2,11 @@
 
 `UsageEvent` is the normalized immutable event. It stores collector, tool, provider, model, UTC timestamp, token categories, hashed session/project identifiers, source kind, source fingerprint, accuracy, parser version, and import timestamp.
 
+When a supported source provides project metadata such as a workspace, working
+directory, or project identifier, TokenGlance stores only a salted hash in
+`projectIdentifierHash`. Project usage views use a short prefix of that hash as
+the display label; readable paths and project names are never persisted.
+
 Token fields are optional because providers expose different categories. Category totals exclude unavailable fields and never estimate tokens from text length.
 
 Manual imports use the same `UsageEvent` shape with `collector = manual-import`

@@ -9,6 +9,7 @@ final class AppDependencies: ObservableObject {
   let aggregator = UsageAggregator()
   let pulseAnalyzer = UsagePulseAnalyzer()
   let modelEfficiencyAnalyzer = ModelEfficiencyAnalyzer()
+  let projectUsageAnalyzer = ProjectUsageAnalyzer()
   let schemaDriftRadar = SchemaDriftRadar()
   let diagnosticsBuilder = DiagnosticsBuilder()
   let weeklyReportBuilder = WeeklyUsageReportBuilder()
@@ -22,6 +23,7 @@ final class AppDependencies: ObservableObject {
   @Published var menuBarSummary: UsageSummary?
   @Published var usagePulse = UsagePulse.empty
   @Published var modelEfficiencyRows: [ModelEfficiencyRow] = []
+  @Published var projectUsageRows: [ProjectUsageRow] = []
   @Published var diagnosticsText = ""
   @Published var collectorDiagnostics: [CollectorDiagnostic] = []
   @Published var lastArchivedReportURL: URL?
@@ -129,14 +131,21 @@ final class AppDependencies: ObservableObject {
       let efficiencyRows = modelEfficiencyAnalyzer.analyze(
         events: events,
         costProfiles: settings.modelCostProfiles)
+      let projectRows = projectUsageAnalyzer.analyze(
+        events: events,
+        toolFilter: selectedTool,
+        modelFilter: selectedModel,
+        costProfiles: settings.modelCostProfiles)
       if animated {
         withAnimation(.snappy(duration: 0.25)) {
           summary = nextSummary
           modelEfficiencyRows = efficiencyRows
+          projectUsageRows = projectRows
         }
       } else {
         summary = nextSummary
         modelEfficiencyRows = efficiencyRows
+        projectUsageRows = projectRows
       }
     } catch {
       diagnosticsText = Redactor().redact(error.localizedDescription)

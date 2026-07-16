@@ -14,6 +14,9 @@ struct ParserTests {
     #expect(batch.events[0].tokens.cachedInputTokens == 20)
     #expect(batch.events[0].tokens.reasoningTokens == 10)
     #expect(batch.events[0].model == "gpt-5")
+    #expect(
+      batch.events[0].projectIdentifierHash
+        == Hashing.privacyHash("/workspace/alpha", salt: "tokenglance-local"))
   }
 
   @Test("Codex parser converts cumulative counters to deltas and skips repeats/resets")
@@ -74,8 +77,8 @@ struct ParserTests {
   @Test("Manual CSV import accepts general AI tool metadata")
   func manualCSVImport() throws {
     let csv = """
-      timestamp,tool,provider,model,input_tokens,output_tokens,cached_input_tokens,reasoning_tokens,total_tokens
-      2026-06-29T08:00:00Z,ChatGPT,openai,gpt-4o,120,40,10,0,170
+      timestamp,tool,provider,model,input_tokens,output_tokens,cached_input_tokens,reasoning_tokens,total_tokens,project
+      2026-06-29T08:00:00Z,ChatGPT,openai,gpt-4o,120,40,10,0,170,/workspace/chat
       2026-06-29T09:00:00Z,Claude,anthropic,claude-3.7-sonnet,90,55,0,12,157
       2026-06-29T10:00:00Z,Gemini,google,gemini-2.5-pro,80,60,5,20,165
       """
@@ -88,6 +91,9 @@ struct ParserTests {
     #expect(batch.events.map(\.provider) == [.openAI, .anthropic, .google])
     #expect(batch.events[0].collector == .manualImport)
     #expect(batch.events[0].sourceKind == .manualImport)
+    #expect(
+      batch.events[0].projectIdentifierHash
+        == Hashing.privacyHash("/workspace/chat", salt: "tokenglance-local"))
     #expect(batch.events[2].tokens.reasoningTokens == 20)
   }
 

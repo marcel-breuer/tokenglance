@@ -28,6 +28,8 @@ browser data, credentials, cookies, or private provider APIs.
 - Breakdown by input, output, cache, and reasoning tokens where available.
 - Model Efficiency view with average tokens per event, cache share, reasoning
   share, and optional local cost estimates.
+- Project Usage view grouped by locally hashed project metadata, with event
+  counts, latest activity, and optional local cost estimates.
 - Local cost profiles for private, user-defined model price estimates.
 - Weekly Markdown report archive under local Application Support storage.
 - Schema Drift Radar to flag local metadata that exists but no longer matches a
@@ -129,6 +131,10 @@ Only metadata fields are normalized. Raw fields such as prompts, responses,
 messages, content, or source text are ignored and are never written to
 TokenGlance's database.
 
+Project metadata can be supplied through `project`, `project_id`, `workspace`,
+`cwd`, or `working_directory` fields. TokenGlance hashes these values locally;
+the readable project name or path is never stored.
+
 ## Privacy
 
 All processing is local. TokenGlance does not upload usage data and does not
@@ -156,6 +162,8 @@ TokenGlance is built around metadata-only insight:
 - **Token Weather**: a compact state for local AI activity intensity.
 - **Model Efficiency**: model-level token totals, average event size, cache
   share, reasoning share, and optional cost estimates.
+- **Project Usage**: usage grouped by locally hashed project metadata, with
+  stable privacy-safe labels and optional cost totals.
 - **Cost Profiles**: local user-defined model pricing; no billing API or cloud
   account required.
 - **Weekly Reports**: Markdown reports with trends, peak hour, top models, cache

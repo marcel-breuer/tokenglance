@@ -67,6 +67,15 @@ struct AppStrings {
     pick(de: "Wochenbericht archivieren", en: "Archive weekly report")
   }
   var modelEfficiency: String { pick(de: "Modell-Effizienz", en: "Model Efficiency") }
+  var projectUsage: String { pick(de: "Projektnutzung", en: "Project Usage") }
+  var projectPrivacyHint: String {
+    pick(de: "lokale, anonymisierte IDs", en: "local, anonymized IDs")
+  }
+  var noProjectMetadata: String {
+    pick(
+      de: "Keine Projektmetadaten in den verfügbaren Nutzungsdaten gefunden.",
+      en: "No project metadata found in the available usage data.")
+  }
   var costProfiles: String { pick(de: "Kostenprofile", en: "Cost Profiles") }
   var addCostProfile: String { pick(de: "Kostenprofil hinzufügen", en: "Add cost profile") }
   var modelPattern: String { pick(de: "Modellmuster", en: "Model pattern") }
@@ -183,6 +192,18 @@ struct AppStrings {
         ? "Add local price profiles to estimate costs in efficiency views."
         : "\(count) local price profiles active."
     )
+  }
+
+  func projectLabel(_ hash: String) -> String {
+    let shortHash = String(hash.prefix(8)).uppercased()
+    return pick(de: "Projekt \(shortHash)", en: "Project \(shortHash)")
+  }
+
+  func projectEventCount(_ count: Int, lastUsed: Date) -> String {
+    let date = lastUsed.formatted(date: .abbreviated, time: .shortened)
+    return pick(
+      de: "\(count) Ereignisse · zuletzt \(date)",
+      en: "\(count) events · last used \(date)")
   }
 
   private func compactTokens(_ value: Int) -> String {
