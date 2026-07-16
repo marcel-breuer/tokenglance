@@ -7,6 +7,10 @@
 | Antigravity | `agy --version` | Not yet | Not yet | Not yet verified | Unavailable until a documented local token metadata source is verified | Yes |
 | Manual import | User-selected CSV/JSON metadata file | Yes | On demand | input, output, cached input, cache creation, reasoning, other, total | Exact for user-provided metadata | No |
 
+Where available, collectors also recognize project metadata from `project`,
+`project_id`, `workspace`, `cwd`, `working_directory`, or `git_root` fields.
+Only a salted hash is persisted for project grouping.
+
 TokenGlance detects Antigravity safely but does not read Antigravity conversations, logs, browser-style storage, or credentials until a documented local token metadata source is verified.
 
 Codex collection scans only local `.jsonl` files under:

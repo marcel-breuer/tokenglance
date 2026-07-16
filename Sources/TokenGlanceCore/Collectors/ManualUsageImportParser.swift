@@ -1,7 +1,7 @@
 import Foundation
 
 public struct ManualUsageImportParser: Sendable {
-  public static let parserVersion = "manual-usage-import-v1"
+  public static let parserVersion = "manual-usage-import-v2"
 
   public init() {}
 
@@ -121,6 +121,8 @@ public struct ManualUsageImportParser: Sendable {
     guard tokens.calculatedTotal > 0 else { return nil }
 
     let model = fields.string(["model", "model_id", "model_name"])
+    let project = fields.string(
+      ["project", "project_id", "workspace", "workspace_id", "cwd", "working_directory"])
     let eventID = Hashing.sha256(
       [
         "manual",
@@ -142,7 +144,9 @@ public struct ManualUsageImportParser: Sendable {
       timestamp: timestamp,
       tokens: tokens,
       sessionIdentifierHash: nil,
-      projectIdentifierHash: nil,
+      projectIdentifierHash: project.map {
+        Hashing.privacyHash($0, salt: "tokenglance-local")
+      },
       sourceKind: .manualImport,
       sourceFingerprint: sourceFingerprint,
       accuracy: .exact,

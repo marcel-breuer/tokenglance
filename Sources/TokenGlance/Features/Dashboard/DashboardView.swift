@@ -116,6 +116,7 @@ struct DashboardView: View {
         pulsePanel
         usageChart
         modelEfficiencyPanel
+        projectUsagePanel
         collectorModules
         breakdownColumns
       }
@@ -286,6 +287,35 @@ struct DashboardView: View {
     }
     .padding(12)
     .background(.background.secondary, in: RoundedRectangle(cornerRadius: 8))
+  }
+
+  private var projectUsagePanel: some View {
+    VStack(alignment: .leading, spacing: 8) {
+      HStack {
+        Label(strings.projectUsage, systemImage: "folder.badge.gearshape")
+          .font(.headline)
+        Spacer()
+        Text(strings.projectPrivacyHint)
+          .font(.caption2)
+          .foregroundStyle(.secondary)
+      }
+
+      if dependencies.projectUsageRows.isEmpty {
+        Text(strings.noProjectMetadata)
+          .foregroundStyle(.secondary)
+          .font(.caption)
+      } else {
+        ForEach(Array(dependencies.projectUsageRows.prefix(8))) { row in
+          ProjectUsageRowView(row: row, strings: strings)
+          if row.id != dependencies.projectUsageRows.prefix(8).last?.id {
+            Divider()
+          }
+        }
+      }
+    }
+    .padding(12)
+    .background(.background.secondary, in: RoundedRectangle(cornerRadius: 8))
+    .accessibilityIdentifier("project-usage-panel")
   }
 
   private var modelEfficiencyPanel: some View {
@@ -514,6 +544,34 @@ private struct ModelEfficiencyRowView: View {
         $0.formatted(.currency(code: "USD").precision(.fractionLength(2...4)))
       } ?? "n/a"
     return "cache \(cache) · reasoning \(reasoning) · \(cost)"
+  }
+}
+
+private struct ProjectUsageRowView: View {
+  let row: ProjectUsageRow
+  let strings: AppStrings
+
+  var body: some View {
+    HStack(alignment: .center, spacing: 10) {
+      VStack(alignment: .leading, spacing: 2) {
+        Text(strings.projectLabel(row.projectIdentifierHash))
+          .font(.caption.weight(.semibold))
+        Text(strings.projectEventCount(row.eventCount, lastUsed: row.lastUsed))
+          .font(.caption2)
+          .foregroundStyle(.secondary)
+      }
+      Spacer()
+      VStack(alignment: .trailing, spacing: 2) {
+        Text(TokenNumberFormat.compact(row.tokens.calculatedTotal))
+          .font(.caption.monospacedDigit().weight(.semibold))
+        if let cost = row.estimatedCost {
+          Text(cost.formatted(.currency(code: "USD").precision(.fractionLength(2...4))))
+            .font(.caption2)
+            .foregroundStyle(.secondary)
+        }
+      }
+    }
+    .padding(.vertical, 4)
   }
 }
 

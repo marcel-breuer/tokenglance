@@ -1,7 +1,7 @@
 import Foundation
 
 public struct ClaudeTelemetryParser: Sendable {
-  public static let parserVersion = "claude-code-otel-token-usage-v1"
+  public static let parserVersion = "claude-code-otel-token-usage-v2"
 
   public init() {}
 
@@ -50,6 +50,12 @@ public struct ClaudeTelemetryParser: Sendable {
       let model = JSONMetadata.string(
         attributes, keys: ["model", "gen_ai.request.model", "gen_ai.response.model"])
       let session = JSONMetadata.string(attributes, keys: ["session_id", "session.id"])
+      let project = JSONMetadata.string(
+        attributes,
+        keys: [
+          "project", "project_id", "workspace", "workspace_id", "cwd", "working_directory",
+          "git_root",
+        ])
       let timestamp =
         JSONMetadata.date(object, keys: ["timestamp", "time_unix_nano", "time"]) ?? importedAt
       let id = Hashing.sha256(
@@ -65,7 +71,7 @@ public struct ClaudeTelemetryParser: Sendable {
           timestamp: timestamp,
           tokens: tokens,
           sessionIdentifierHash: session.map { Hashing.privacyHash($0, salt: privacySalt) },
-          projectIdentifierHash: nil,
+          projectIdentifierHash: project.map { Hashing.privacyHash($0, salt: privacySalt) },
           sourceKind: .localTelemetry,
           sourceFingerprint: sourceFingerprint,
           accuracy: .exact,
@@ -79,7 +85,7 @@ public struct ClaudeTelemetryParser: Sendable {
 }
 
 public struct GeminiTelemetryParser: Sendable {
-  public static let parserVersion = "gemini-cli-telemetry-token-usage-v1"
+  public static let parserVersion = "gemini-cli-telemetry-token-usage-v2"
 
   public init() {}
 
@@ -119,6 +125,12 @@ public struct GeminiTelemetryParser: Sendable {
       let model = JSONMetadata.string(
         attributes, keys: ["model", "gen_ai.request.model", "gen_ai.response.model"])
       let session = JSONMetadata.string(attributes, keys: ["session_id", "session.id"])
+      let project = JSONMetadata.string(
+        attributes,
+        keys: [
+          "project", "project_id", "workspace", "workspace_id", "cwd", "working_directory",
+          "git_root",
+        ])
       let timestamp = JSONMetadata.date(object, keys: ["timestamp", "time"]) ?? importedAt
       let id = Hashing.sha256(
         "gemini|\(sourceFingerprint)|\(record.offset)|\(tokens.calculatedTotal)")
@@ -133,7 +145,7 @@ public struct GeminiTelemetryParser: Sendable {
           timestamp: timestamp,
           tokens: tokens,
           sessionIdentifierHash: session.map { Hashing.privacyHash($0, salt: privacySalt) },
-          projectIdentifierHash: nil,
+          projectIdentifierHash: project.map { Hashing.privacyHash($0, salt: privacySalt) },
           sourceKind: .localTelemetry,
           sourceFingerprint: sourceFingerprint,
           accuracy: .exact,

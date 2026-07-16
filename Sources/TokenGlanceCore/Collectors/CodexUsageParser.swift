@@ -1,7 +1,7 @@
 import Foundation
 
 public struct CodexUsageParser: Sendable {
-  public static let parserVersion = "codex-jsonl-token-count-v2"
+  public static let parserVersion = "codex-jsonl-token-count-v3"
 
   public init() {}
 
@@ -15,11 +15,15 @@ public struct CodexUsageParser: Sendable {
     var events: [UsageEvent] = []
     var invalid = 0
     var currentModel: String?
+    var currentProject: String?
 
     for record in JSONMetadata.objects(fromJSONLines: data) {
       let observedModel = modelIdentifier(from: record.object)
       if let observedModel {
         currentModel = observedModel
+      }
+      if let observedProject = projectIdentifier(from: record.object) {
+        currentProject = observedProject
       }
 
       guard let usage = usageRecord(from: record.object) else {
@@ -31,6 +35,7 @@ public struct CodexUsageParser: Sendable {
         JSONMetadata.date(record.object, keys: ["timestamp", "ts", "time", "created_at"])
         ?? importedAt
       let model = observedModel ?? currentModel
+      let project = projectIdentifier(from: record.object) ?? currentProject
       let sessionID = JSONMetadata.nestedString(
         record.object,
         candidates: [
@@ -70,7 +75,7 @@ public struct CodexUsageParser: Sendable {
           timestamp: timestamp,
           tokens: tokens,
           sessionIdentifierHash: sessionID.map { Hashing.privacyHash($0, salt: privacySalt) },
-          projectIdentifierHash: nil,
+          projectIdentifierHash: project.map { Hashing.privacyHash($0, salt: privacySalt) },
           sourceKind: .localJSONL,
           sourceFingerprint: sourceFingerprint,
           accuracy: .exact,
@@ -99,6 +104,18 @@ public struct CodexUsageParser: Sendable {
         ["message", "info", "model"],
         ["payload", "info", "model"],
         ["payload", "collaboration_mode", "settings", "model"],
+      ])
+  }
+
+  private func projectIdentifier(from object: [String: Any]) -> String? {
+    JSONMetadata.nestedString(
+      object,
+      candidates: [
+        ["project"], ["project_id"], ["workspace"], ["workspace_id"], ["cwd"],
+        ["working_directory"], ["git_root"], ["msg", "project"], ["message", "project"],
+        ["payload", "project"], ["msg", "info", "project"],
+        ["message", "info", "project"], ["payload", "info", "project"],
+        ["msg", "cwd"], ["message", "cwd"], ["payload", "cwd"],
       ])
   }
 
