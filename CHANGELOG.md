@@ -17,6 +17,13 @@
 - Added Burn Rate and Token Weather indicators for current local usage intensity.
 - Added automatic relaunch when the installed app bundle changes while TokenGlance is running.
 - Added model efficiency analytics, local cost profiles, report archiving, schema drift diagnostics, and refreshed README screenshots.
+- Added Project Usage aggregation and dashboard presentation with privacy-safe
+  hashed project metadata, event counts, latest activity, token mix, and local
+  cost estimates.
+- Added general AI metadata import support for project fields from CSV and JSON
+  sources, while continuing to discard readable paths and raw content.
+- Added the always-on Usage Strip as the default menu-bar presentation for
+  today's total and recent activity.
 
 ## 0.1.1
 

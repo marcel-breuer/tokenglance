@@ -40,6 +40,10 @@ browser data, credentials, cookies, or private provider APIs.
 - CSV and JSON export of normalized usage metadata.
 - Local-only storage with no account, backend, analytics, or telemetry.
 
+The current feature set is described in more detail in
+[`docs/features.md`](docs/features.md), including the privacy model for
+project-level aggregation and the workflow for importing external metadata.
+
 ## Requirements
 
 - macOS 14 Sonoma or newer
@@ -172,6 +176,17 @@ TokenGlance is built around metadata-only insight:
   but no longer match a supported parser.
 - **Manual AI Import**: bring your own ChatGPT, Claude, Gemini, or provider API
   token exports into the same local analytics surface.
+
+### Project Usage
+
+Open the Project Usage section in the dashboard to compare token activity by
+project, workspace, or working directory. The view follows the selected period,
+tool, and model filters and shows event count, latest activity, token mix, and
+optional local cost estimates for each group.
+
+Project grouping is privacy-safe by design: TokenGlance hashes supported project
+metadata locally with a per-installation salt. It never stores or displays the
+original path, workspace name, repository name, or project identifier.
 
 ## Manual Installation
 
