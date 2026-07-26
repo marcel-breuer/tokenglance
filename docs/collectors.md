@@ -13,9 +13,17 @@ Claude Code has no built-in file exporter for telemetry (see
 [Claude Code monitoring docs](https://code.claude.com/docs/en/monitoring-usage)). TokenGlance
 runs a local, loopback-only OTLP/HTTP JSON receiver (`ClaudeTelemetryReceiver`, default port
 `4319`) while the app is running, and reads what it captures from
-`~/Library/Application Support/TokenGlance/claude-otel/`. TokenGlance never edits Claude Code's
-own configuration — set these yourself (e.g. in your shell profile or `.claude/settings.json`)
-and restart Claude Code:
+`~/Library/Application Support/TokenGlance/claude-otel/`.
+
+TokenGlance configures this automatically: the first time it sees Claude Code installed with no
+OpenTelemetry setup at all, it adds the four required env vars to Claude Code's own
+`~/.claude/settings.json` `env` block for you (`ClaudeCodeTelemetryConfigurator`). You only need
+to **restart Claude Code** afterward — the collector badge shows "waiting for data" once this
+happens, and switches to "detected" after your next Claude Code session sends usage.
+
+If Claude Code already has any OpenTelemetry env var configured (even just one, e.g. from your own
+setup), TokenGlance leaves it alone rather than overwriting it, and falls back to showing manual
+instructions instead:
 
 ```bash
 export CLAUDE_CODE_ENABLE_TELEMETRY=1
@@ -25,8 +33,9 @@ export OTEL_EXPORTER_OTLP_ENDPOINT=http://127.0.0.1:4319
 ```
 
 Token usage only arrives while TokenGlance is running and the receiver is bound. The collector
-badge reflects this: `setup required` (no telemetry ever received), `waiting for data` (receiver
-ready, no Claude Code session run yet), `detected` (usage flowing).
+badge reflects this: `setup required` (nothing configured and Claude Code has its own
+conflicting OTel setup TokenGlance won't touch), `waiting for data` (receiver ready and
+configured, no Claude Code session run yet), `detected` (usage flowing).
 
 Where available, collectors also recognize project metadata from `project`,
 `project_id`, `workspace`, `cwd`, `working_directory`, or `git_root` fields.

@@ -60,6 +60,53 @@ struct CollectorDetectionTests {
     #expect(detection.explanation.contains("OTEL_EXPORTER_OTLP_ENDPOINT"))
   }
 
+  @Test("Claude Code collector auto-configures settings.json and reports waiting for data")
+  func claudeCodeCollectorAutoConfigures() async throws {
+    let (detector, sourceDirectory) = try claudeCodeFixture()
+    let root = try temporaryDirectory()
+    let settingsURL = root.appendingPathComponent("claude-settings.json")
+    let configurator = ClaudeCodeTelemetryConfigurator(
+      settingsURL: settingsURL, receiverPort: 4319)
+
+    let collector = ClaudeCodeCollector(
+      detector: detector, sourceDirectories: [sourceDirectory], configurator: configurator)
+    let detection = await collector.detect()
+
+    #expect(detection.status == .waitingForData)
+    #expect(detection.explanation.contains("automatically configured"))
+
+    let written = try Data(contentsOf: settingsURL)
+    let json = try JSONSerialization.jsonObject(with: written) as? [String: Any]
+    let env = json?["env"] as? [String: String]
+    #expect(env?["CLAUDE_CODE_ENABLE_TELEMETRY"] == "1")
+    #expect(env?["OTEL_EXPORTER_OTLP_ENDPOINT"] == "http://127.0.0.1:4319")
+  }
+
+  @Test("Claude Code collector leaves existing user OTel settings untouched")
+  func claudeCodeCollectorLeavesUserManagedSettingsAlone() async throws {
+    let (detector, sourceDirectory) = try claudeCodeFixture()
+    let root = try temporaryDirectory()
+    let settingsURL = root.appendingPathComponent("claude-settings.json")
+    let existing: [String: Any] = [
+      "env": ["OTEL_EXPORTER_OTLP_ENDPOINT": "http://example.com:9999"]
+    ]
+    try JSONSerialization.data(withJSONObject: existing).write(to: settingsURL)
+    let configurator = ClaudeCodeTelemetryConfigurator(
+      settingsURL: settingsURL, receiverPort: 4319)
+
+    let collector = ClaudeCodeCollector(
+      detector: detector, sourceDirectories: [sourceDirectory], configurator: configurator)
+    let detection = await collector.detect()
+
+    #expect(detection.status == .setupRequired)
+    #expect(detection.explanation.contains("already has its own OpenTelemetry configuration"))
+
+    let written = try Data(contentsOf: settingsURL)
+    let json = try JSONSerialization.jsonObject(with: written) as? [String: Any]
+    let env = json?["env"] as? [String: String]
+    #expect(env?["OTEL_EXPORTER_OTLP_ENDPOINT"] == "http://example.com:9999")
+  }
+
   @Test("Claude Code collector reports waiting for data when receiver directory has only empty files")
   func claudeCodeCollectorReportsWaitingForData() async throws {
     let (detector, sourceDirectory) = try claudeCodeFixture()
