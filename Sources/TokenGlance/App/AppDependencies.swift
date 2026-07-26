@@ -54,7 +54,7 @@ final class AppDependencies: ObservableObject {
   init() {
     collectors = [
       CodexCLICollector(),
-      ClaudeCodeCollector(),
+      ClaudeCodeCollector(configurator: ClaudeCodeTelemetryConfigurator()),
       AntigravityCollector(),
     ]
   }
