@@ -53,14 +53,21 @@ struct ParserTests {
     #expect(!encoded.contains("SYNTHETIC_SECRET_PROMPT_SHOULD_NOT_APPEAR"))
   }
 
-  @Test("Claude telemetry parser extracts supported token categories")
+  @Test("Claude telemetry parser extracts OTLP token.usage data points")
   func claudeTelemetry() throws {
     let data = try fixture("ClaudeCode/telemetry.jsonl")
     let batch = ClaudeTelemetryParser().parseJSONLines(data, sourceFingerprint: "claude")
-    #expect(batch.events.count == 1)
-    #expect(batch.events[0].tokens.inputTokens == 80)
-    #expect(batch.events[0].tokens.cacheCreationTokens == 6)
-    #expect(batch.events[0].provider == .anthropic)
+    #expect(batch.events.count == 4)
+    #expect(batch.events.allSatisfy { $0.provider == .anthropic })
+    #expect(batch.events.allSatisfy { $0.model == "claude-sonnet-4-5" })
+    #expect(batch.events.allSatisfy { $0.sourceKind == .otlpHTTP })
+    #expect(batch.events.compactMap(\.tokens.inputTokens) == [80])
+    #expect(batch.events.compactMap(\.tokens.outputTokens) == [30])
+    #expect(batch.events.compactMap(\.tokens.cachedInputTokens) == [12])
+    #expect(batch.events.compactMap(\.tokens.cacheCreationTokens) == [6])
+    #expect(
+      batch.events[0].sessionIdentifierHash
+        == Hashing.privacyHash("claude-session", salt: "tokenglance-local"))
   }
 
   @Test("Google telemetry parser extracts token categories")
