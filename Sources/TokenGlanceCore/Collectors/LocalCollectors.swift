@@ -181,6 +181,7 @@ public struct ClaudeCodeCollector: UsageCollector {
   private let detector: CommandLineToolDetector
   private let scanner: JSONLDirectoryScanner
   private let parser: ClaudeTelemetryParser
+  private let configurator: ClaudeCodeTelemetryConfigurator?
 
   /// TokenGlance's own local OTLP receiver writes here; see `ClaudeTelemetryReceiver`.
   public static var defaultSourceDirectories: [URL] {
@@ -194,14 +195,20 @@ public struct ClaudeCodeCollector: UsageCollector {
     export OTEL_EXPORTER_OTLP_ENDPOINT=http://127.0.0.1:\(ClaudeTelemetryReceiver.defaultPort)
     """
 
+  /// - Parameter configurator: when non-nil, `detect()` writes the OTLP env vars into
+  ///   Claude Code's own `settings.json` on the user's behalf (see
+  ///   `ClaudeCodeTelemetryConfigurator`), skipping the manual `export` step. Nil in
+  ///   tests so they never touch the real `~/.claude/settings.json`.
   public init(
     detector: CommandLineToolDetector = CommandLineToolDetector(),
     sourceDirectories: [URL] = Self.defaultSourceDirectories,
-    parser: ClaudeTelemetryParser = ClaudeTelemetryParser()
+    parser: ClaudeTelemetryParser = ClaudeTelemetryParser(),
+    configurator: ClaudeCodeTelemetryConfigurator? = nil
   ) {
     self.detector = detector
     self.scanner = JSONLDirectoryScanner(sourceDirectories: sourceDirectories)
     self.parser = parser
+    self.configurator = configurator
   }
 
   public func detect() async -> CollectorDetectionResult {
@@ -213,6 +220,22 @@ public struct ClaudeCodeCollector: UsageCollector {
     let version = detector.version(executablePath: path)
     let files = (try? scanner.files()) ?? []
     guard !files.isEmpty else {
+      if let configurator, let outcome = try? configurator.ensureConfigured(),
+        outcome == .configured
+      {
+        return CollectorDetectionResult(
+          identifier: identifier,
+          status: .waitingForData,
+          executablePath: path,
+          version: version,
+          explanation:
+            """
+            TokenGlance automatically configured Claude Code to send token usage to its \
+            local receiver (added to ~/.claude/settings.json). Restart Claude Code, then \
+            run a session — usage will appear here automatically.
+            """
+        )
+      }
       return CollectorDetectionResult(
         identifier: identifier,
         status: .setupRequired,
@@ -220,9 +243,9 @@ public struct ClaudeCodeCollector: UsageCollector {
         version: version,
         explanation:
           """
-          Claude Code is installed. TokenGlance will not edit Claude settings automatically \
-          — set these in your shell profile so Claude Code sends token usage to TokenGlance's \
-          local receiver, then restart Claude Code:
+          Claude Code is installed but already has its own OpenTelemetry configuration, so \
+          TokenGlance did not change it. Point it at TokenGlance's local receiver yourself, \
+          then restart Claude Code:
 
           \(Self.setupInstructions)
           """
