@@ -16,6 +16,7 @@ final class AppDependencies: ObservableObject {
   let weeklyReportBuilder = WeeklyUsageReportBuilder()
   let reportArchive = LocalReportArchive()
   let updateRelaunchMonitor = UpdateRelaunchMonitor()
+  let claudeTelemetryReceiver = ClaudeTelemetryReceiver()
   let collectors: [any UsageCollector]
 
   @Published var settings = AppSettings()
@@ -46,6 +47,8 @@ final class AppDependencies: ObservableObject {
 
   deinit {
     liveRefreshTask?.cancel()
+    let receiver = claudeTelemetryReceiver
+    Task { await receiver.stop() }
   }
 
   init() {
@@ -64,6 +67,7 @@ final class AppDependencies: ObservableObject {
         settings = try await settingsStore.load()
         selectedPeriod = settings.defaultReportingPeriod
         try await database.open()
+        _ = try? await claudeTelemetryReceiver.start()
         await refresh(mode: .full)
         configureLiveRefresh()
         updateRelaunchMonitor.start()
