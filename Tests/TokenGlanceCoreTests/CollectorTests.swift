@@ -69,6 +69,46 @@ struct CollectorTests {
     #expect(changedBatch.cursors.first?.offset ?? 0 > firstBatch.cursors.first?.offset ?? 0)
   }
 
+  @Test("Claude Code collector reads OTLP telemetry files written by the local receiver")
+  func claudeCodeCollectorReadsTelemetryDirectory() async throws {
+    let root = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+    try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
+    defer { try? FileManager.default.removeItem(at: root) }
+
+    let data = try fixture("ClaudeCode/telemetry.jsonl")
+    try data.write(to: root.appendingPathComponent("claude-otel-2026-07-27.jsonl"))
+
+    let collector = ClaudeCodeCollector(sourceDirectories: [root])
+    let batch = try await collector.collect(since: [])
+
+    #expect(batch.events.count == 4)
+    #expect(batch.events.allSatisfy { $0.collector == .claudeCode })
+  }
+
+  @Test("Claude Code collector skips unchanged telemetry files using cursors")
+  func claudeCodeCollectorSkipsUnchangedFilesUsingCursors() async throws {
+    let root = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+    try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
+    defer { try? FileManager.default.removeItem(at: root) }
+
+    let data = try fixture("ClaudeCode/telemetry.jsonl")
+    try data.write(to: root.appendingPathComponent("claude-otel-2026-07-27.jsonl"))
+
+    let collector = ClaudeCodeCollector(sourceDirectories: [root])
+    let firstBatch = try await collector.collect(since: [])
+    let secondBatch = try await collector.collect(since: firstBatch.cursors)
+
+    #expect(firstBatch.events.count == 4)
+    #expect(secondBatch.events.isEmpty)
+    #expect(secondBatch.cursors == firstBatch.cursors)
+  }
+
+  private func fixture(_ path: String) throws -> Data {
+    let url = Bundle.module.resourceURL!.appendingPathComponent("Fixtures").appendingPathComponent(
+      path)
+    return try Data(contentsOf: url)
+  }
+
   private func syntheticCodexJSONL(totalTokens: Int) -> String {
     """
     {"timestamp":"2026-06-28T10:00:00Z","type":"event_msg","payload":{"type":"token_count","info":{"total_token_usage":{"input_tokens":\(totalTokens),"output_tokens":0,"total_tokens":\(totalTokens)}}}}
