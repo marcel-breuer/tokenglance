@@ -7,8 +7,6 @@ on:
         description: "Semantic version to tag and release, without v prefix"
         required: true
         type: string
-  push:
-    branches: [main]
 
 permissions:
   contents: write
@@ -37,22 +35,7 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
-            VERSION="${{ inputs.version }}"
-          else
-            LATEST_TAG="$(gh release list --limit 1 --json tagName --jq '.[0].tagName // empty')"
-            if [[ -z "$LATEST_TAG" ]]; then
-              LATEST_TAG="$(git tag --list 'v*.*.*' --sort=-v:refname | head -n 1)"
-            fi
-            if [[ -z "$LATEST_TAG" ]]; then
-              VERSION="0.1.0"
-            else
-              VERSION="${LATEST_TAG#v}"
-              IFS=. read -r MAJOR MINOR PATCH <<< "$VERSION"
-              PATCH="$((PATCH + 1))"
-              VERSION="${MAJOR}.${MINOR}.${PATCH}"
-            fi
-          fi
+          VERSION="${{ inputs.version }}"
           if [[ ! "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
             echo "Version must use MAJOR.MINOR.PATCH format: $VERSION" >&2
             exit 1
