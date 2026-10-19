@@ -153,6 +153,7 @@ public struct GeminiTelemetryParser: Sendable {
   ) -> CollectionBatch {
     var events: [UsageEvent] = []
     var invalid = 0
+    let dateParser = JSONMetadata.DateParser()
 
     for record in JSONMetadata.objects(fromJSONLines: data) {
       let object = record.object
@@ -187,7 +188,8 @@ public struct GeminiTelemetryParser: Sendable {
           "project", "project_id", "workspace", "workspace_id", "cwd", "working_directory",
           "git_root",
         ])
-      let timestamp = JSONMetadata.date(object, keys: ["timestamp", "time"]) ?? importedAt
+      let timestamp =
+        JSONMetadata.date(object, keys: ["timestamp", "time"], using: dateParser) ?? importedAt
       let id = Hashing.sha256(
         "gemini|\(sourceFingerprint)|\(record.offset)|\(tokens.calculatedTotal)")
 

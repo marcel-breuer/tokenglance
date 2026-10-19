@@ -16,6 +16,7 @@ public struct CodexUsageParser: Sendable {
     var invalid = 0
     var currentModel: String?
     var currentProject: String?
+    let dateParser = JSONMetadata.DateParser()
 
     for record in JSONMetadata.objects(fromJSONLines: data) {
       let observedModel = modelIdentifier(from: record.object)
@@ -32,7 +33,8 @@ public struct CodexUsageParser: Sendable {
       }
 
       let timestamp =
-        JSONMetadata.date(record.object, keys: ["timestamp", "ts", "time", "created_at"])
+        JSONMetadata.date(
+          record.object, keys: ["timestamp", "ts", "time", "created_at"], using: dateParser)
         ?? importedAt
       let model = observedModel ?? currentModel
       let project = projectIdentifier(from: record.object) ?? currentProject

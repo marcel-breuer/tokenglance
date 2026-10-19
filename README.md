@@ -45,6 +45,9 @@ browser data, credentials, cookies, or private provider APIs.
 The current feature set is described in more detail in
 [`docs/features.md`](docs/features.md), including the privacy model for
 project-level aggregation and the workflow for importing external metadata.
+The data flow, schema recovery policy, and reproducible storage/performance
+baseline are documented in
+[`docs/performance-baseline.md`](docs/performance-baseline.md).
 
 ## Requirements
 
