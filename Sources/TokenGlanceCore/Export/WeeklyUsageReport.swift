@@ -82,17 +82,20 @@ public struct WeeklyUsageReportBuilder: Sendable {
   }
 
   private func dailyTrendRows(events: [UsageEvent], interval: DateInterval) -> [TrendRow] {
+    var totalsByDay: [Date: Int] = [:]
+    for event in events where interval.contains(event.timestamp) {
+      let day = calendar.startOfDay(for: event.timestamp)
+      totalsByDay[day, default: 0] += event.tokens.calculatedTotal
+    }
+
     var rows: [TrendRow] = []
     var cursor = calendar.startOfDay(for: interval.start)
     let endDay = calendar.startOfDay(for: interval.end)
     while cursor <= endDay {
-      let next = calendar.date(byAdding: .day, value: 1, to: cursor) ?? cursor
-      let tokens =
-        events
-        .filter { $0.timestamp >= cursor && $0.timestamp < next }
-        .map { $0.tokens.calculatedTotal }
-        .reduce(0, +)
-      rows.append(TrendRow(label: dayString(cursor), tokens: tokens))
+      rows.append(TrendRow(label: dayString(cursor), tokens: totalsByDay[cursor, default: 0]))
+      guard let next = calendar.date(byAdding: .day, value: 1, to: cursor), next > cursor else {
+        break
+      }
       cursor = next
     }
     return rows

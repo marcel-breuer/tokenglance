@@ -2,6 +2,8 @@ import Foundation
 import SQLite3
 
 public actor UsageDatabase {
+  private static let currentSchemaVersion = 1
+
   private let url: URL
   private var db: OpaquePointer?
 
@@ -12,27 +14,44 @@ public actor UsageDatabase {
   }
 
   public func open() throws {
+    guard db == nil else { return }
     try FileManager.default.createDirectory(
       at: url.deletingLastPathComponent(), withIntermediateDirectories: true)
-    guard
-      sqlite3_open_v2(
-        url.path, &db, SQLITE_OPEN_CREATE | SQLITE_OPEN_READWRITE | SQLITE_OPEN_FULLMUTEX, nil)
-        == SQLITE_OK
-    else {
-      throw DatabaseError.openFailed(message: lastError)
+    let result = sqlite3_open_v2(
+      url.path, &db, SQLITE_OPEN_CREATE | SQLITE_OPEN_READWRITE | SQLITE_OPEN_FULLMUTEX, nil)
+    guard result == SQLITE_OK else {
+      let message = lastError
+      closeAfterOpenFailure()
+      throw DatabaseError.openFailed(message: message)
     }
-    try execute("PRAGMA journal_mode = WAL")
-    try execute("PRAGMA foreign_keys = ON")
-    try migrate()
+    do {
+      try execute("PRAGMA journal_mode = WAL")
+      try execute("PRAGMA foreign_keys = ON")
+      try migrate()
+    } catch {
+      closeAfterOpenFailure()
+      throw error
+    }
   }
 
   public func importBatch(_ batch: CollectionBatch) throws -> Int {
     try ensureOpen()
     try execute("BEGIN IMMEDIATE TRANSACTION")
     do {
+      let insertStatement = try prepare(
+        """
+        INSERT OR IGNORE INTO usage_events (
+            id, collector, tool, provider, model, timestamp, input_tokens, output_tokens,
+            cached_input_tokens, cache_creation_tokens, reasoning_tokens, other_tokens,
+            total_tokens, session_hash, project_hash, source_kind, source_fingerprint,
+            accuracy, parser_version, imported_at
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        """)
+      defer { sqlite3_finalize(insertStatement) }
+
       var inserted = 0
       for event in batch.events {
-        inserted += try insert(event) ? 1 : 0
+        inserted += try insert(event, using: insertStatement) ? 1 : 0
       }
       for cursor in batch.cursors {
         try upsert(cursor)
@@ -133,6 +152,25 @@ public actor UsageDatabase {
   }
 
   private func migrate() throws {
+    let version = try schemaVersion()
+    guard version <= Self.currentSchemaVersion else {
+      throw DatabaseError.unsupportedSchema(
+        found: version, supported: Self.currentSchemaVersion)
+    }
+    guard version < Self.currentSchemaVersion else { return }
+
+    try execute("BEGIN EXCLUSIVE TRANSACTION")
+    do {
+      try migrateToVersionOne()
+      try execute("PRAGMA user_version = 1")
+      try execute("COMMIT")
+    } catch {
+      try? execute("ROLLBACK")
+      throw error
+    }
+  }
+
+  private func migrateToVersionOne() throws {
     try execute(
       """
       CREATE TABLE IF NOT EXISTS usage_events (
@@ -171,20 +209,20 @@ public actor UsageDatabase {
     try execute("CREATE INDEX IF NOT EXISTS idx_usage_tool ON usage_events(tool)")
     try execute("CREATE INDEX IF NOT EXISTS idx_usage_model ON usage_events(model)")
     try execute("CREATE INDEX IF NOT EXISTS idx_usage_source ON usage_events(source_fingerprint)")
-    try execute("PRAGMA user_version = 1")
   }
 
-  private func insert(_ event: UsageEvent) throws -> Bool {
-    let sql = """
-      INSERT OR IGNORE INTO usage_events (
-          id, collector, tool, provider, model, timestamp, input_tokens, output_tokens,
-          cached_input_tokens, cache_creation_tokens, reasoning_tokens, other_tokens,
-          total_tokens, session_hash, project_hash, source_kind, source_fingerprint,
-          accuracy, parser_version, imported_at
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-      """
-    let statement = try prepare(sql)
-    defer { sqlite3_finalize(statement) }
+  private func closeAfterOpenFailure() {
+    if let db {
+      sqlite3_close_v2(db)
+      self.db = nil
+    }
+  }
+
+  private func insert(_ event: UsageEvent, using statement: OpaquePointer?) throws -> Bool {
+    defer {
+      sqlite3_reset(statement)
+      sqlite3_clear_bindings(statement)
+    }
     bindText(statement, 1, event.id)
     bindText(statement, 2, event.collector.rawValue)
     bindText(statement, 3, event.tool.rawValue)
@@ -339,11 +377,14 @@ public actor UsageDatabase {
 public enum DatabaseError: Error, LocalizedError {
   case openFailed(message: String)
   case statementFailed(message: String)
+  case unsupportedSchema(found: Int, supported: Int)
 
   public var errorDescription: String? {
     switch self {
     case .openFailed(let message): "Could not open local database: \(message)"
     case .statementFailed(let message): "Local database operation failed: \(message)"
+    case .unsupportedSchema(let found, let supported):
+      "Local database schema version \(found) is newer than the supported version \(supported). Keep the database and open it with a newer TokenGlance release."
     }
   }
 }

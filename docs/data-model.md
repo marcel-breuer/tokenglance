@@ -23,3 +23,19 @@ SQLite tables:
 
 - `usage_events`: normalized metadata with unique `id` for deduplication.
 - `collection_cursors`: incremental source offsets keyed by source fingerprint.
+
+## Schema migration and recovery
+
+`PRAGMA user_version` tracks the local database schema. Version 1 creates both
+tables and their indexes in one exclusive transaction. A failed migration rolls
+back before the database is closed. Future schema changes must be added as
+ordered, transactional migrations and advance `user_version` only after their
+schema changes succeed.
+
+TokenGlance rejects a database whose schema version is newer than the running
+app supports. It does not downgrade, overwrite, or recreate that database.
+Migration and open failures preserve the existing database files and return an
+error rather than silently resetting local data. For recovery, keep the
+original database and use a user-managed macOS backup; when the database
+remains readable, export normalized metadata to CSV or JSON before restoring or
+removing local data. Resetting data is an explicit user action.

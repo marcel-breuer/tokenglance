@@ -5,6 +5,20 @@ public struct Redactor: Sendable {
 
   public func redact(_ text: String) -> String {
     var result = text
+    result = replacing(
+      result,
+      pattern: #"(?i)\b(prompt|response|source[_-]?code|session[_-]?(?:id|identifier)|cookie|authorization)\b\s*[:=]\s*(?:"[^"]*"|'[^']*'|[^,\r\n;]+)"#,
+      with: "$1=<redacted>"
+    )
+    result = replacing(
+      result,
+      pattern: #"(?i)\b(path|file|directory|source[_-]?path)\b\s*[:=]\s*(?:"[^"]*"|'[^']*'|[^,\r\n;]+)"#,
+      with: "$1=<redacted>"
+    )
+    result = replacing(
+      result, pattern: #"['"“](/(?:Users|private|Volumes|tmp|var)/[^'"”\r\n]*)['"”]"#,
+      with: "<redacted-path>"
+    )
     let home = NSRegularExpression.escapedPattern(
       for: FileManager.default.homeDirectoryForCurrentUser.path)
     result = replacing(result, pattern: home + #"(/[^\s,;)]*)?"#, with: "~/<redacted>")

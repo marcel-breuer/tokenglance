@@ -19,6 +19,19 @@ struct ParserTests {
         == Hashing.privacyHash("/workspace/alpha", salt: "tokenglance-local"))
   }
 
+  @Test("Codex parser preserves fractional seconds and timezone offsets")
+  func codexFractionalOffsetTimestamp() {
+    let data = Data(
+      #"{"type":"token_count","timestamp":"2026-10-19T12:34:56.125+02:30","last_token_usage":{"input_tokens":10,"output_tokens":5,"total_tokens":15}}"#.utf8
+    )
+    let batch = CodexUsageParser().parseJSONLines(data, sourceFingerprint: "source")
+    let expected = DateCoding.parseISO8601("2026-10-19T10:04:56.125Z")!
+
+    #expect(batch.events.count == 1)
+    #expect(
+      abs(batch.events[0].timestamp.timeIntervalSince1970 - expected.timeIntervalSince1970) < 0.001)
+  }
+
   @Test("Codex parser converts cumulative counters to deltas and skips repeats/resets")
   func codexCumulative() throws {
     let data = try fixture("Codex/cumulative.jsonl")
