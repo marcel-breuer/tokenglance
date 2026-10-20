@@ -109,6 +109,7 @@ jobs:
           gh release create "$TAG" \
             "dist/TokenGlance-${VERSION}-arm64.zip" \
             "dist/TokenGlance-${VERSION}-arm64.zip.sha256" \
+            --title "$TAG" \
             --notes-file CHANGELOG.md
       - name: Update Homebrew tap
         env:
