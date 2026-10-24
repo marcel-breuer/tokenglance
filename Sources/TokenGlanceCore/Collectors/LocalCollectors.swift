@@ -375,3 +375,91 @@ public struct AntigravityCollector: UsageCollector {
     )
   }
 }
+
+public struct GeminiCLICollector: UsageCollector {
+  public let identifier: CollectorIdentifier = .geminiCLI
+  public let displayName = "Gemini CLI"
+  public let capabilities: CollectorCapabilities = [
+    .inputTokens, .outputTokens, .cachedInputTokens, .reasoningTokens,
+    .modelIdentifier, .exactTimestamp, .incrementalUpdates, .liveUpdates,
+  ]
+
+  public static let receiverPort: UInt16 = 4320
+  public static var defaultSourceDirectories: [URL] {
+    [AppIdentity.applicationSupportDirectory.appendingPathComponent("gemini-cli-otel", isDirectory: true)]
+  }
+
+  private let detector: CommandLineToolDetector
+  private let scanner: JSONLDirectoryScanner
+  private let parser: GeminiTelemetryParser
+
+  public init(
+    detector: CommandLineToolDetector = CommandLineToolDetector(),
+    sourceDirectories: [URL] = Self.defaultSourceDirectories,
+    parser: GeminiTelemetryParser = GeminiTelemetryParser()
+  ) {
+    self.detector = detector
+    self.scanner = JSONLDirectoryScanner(sourceDirectories: sourceDirectories)
+    self.parser = parser
+  }
+
+  public func detect() async -> CollectorDetectionResult {
+    guard let path = detector.locate("gemini") else {
+      return CollectorDetectionResult(
+        identifier: identifier, status: .notInstalled, executablePath: nil, version: nil,
+        explanation: "Gemini CLI executable was not found on PATH.")
+    }
+    let files = (try? scanner.files()) ?? []
+    let hasData = files.contains { url in
+      (try? url.resourceValues(forKeys: [.fileSizeKey]).fileSize).flatMap { $0 } ?? 0 > 0
+    }
+    return CollectorDetectionResult(
+      identifier: identifier,
+      status: hasData ? .detected : .setupRequired,
+      executablePath: path,
+      version: detector.version(executablePath: path),
+      explanation: hasData
+        ? "TokenGlance is receiving allowlisted Gemini CLI token metrics through its local receiver."
+        : "Gemini CLI is installed. Enable its local OpenTelemetry collector, set logPrompts and traces to false, and point the HTTP exporter at http://127.0.0.1:\(Self.receiverPort). TokenGlance stores token metadata only."
+    )
+  }
+
+  public func collect(since cursors: [CollectionCursor]) async throws -> CollectionBatch {
+    try Task.checkCancellation()
+    let files = try scanner.files()
+    let knownOffsets = Dictionary(uniqueKeysWithValues: cursors.map { ($0.sourceFingerprint, $0) })
+    var events: [UsageEvent] = []
+    var nextCursors: [CollectionCursor] = []
+    var invalid = 0
+
+    for file in files {
+      try Task.checkCancellation()
+      guard let resolved = try? scanner.safeResolvedFile(file) else { continue }
+      let fingerprint = Hashing.sha256(resolved.path)
+      let size = try resolved.resourceValues(forKeys: [.fileSizeKey]).fileSize ?? 0
+      if let cursor = knownOffsets[fingerprint], cursor.offset == UInt64(size) {
+        nextCursors.append(cursor)
+        continue
+      }
+      let handle = try FileHandle(forReadingFrom: resolved)
+      defer { try? handle.close() }
+      let batch = parser.parseJSONLines(try handle.readToEnd() ?? Data(), sourceFingerprint: fingerprint)
+      events.append(contentsOf: batch.events)
+      invalid += batch.invalidRecords
+      nextCursors.append(CollectionCursor(sourceFingerprint: fingerprint, offset: try handle.offset()))
+    }
+    return CollectionBatch(
+      events: events, cursors: nextCursors, importedRecords: events.count, invalidRecords: invalid)
+  }
+
+  public func diagnose() async -> CollectorDiagnostic {
+    let detection = await detect()
+    return CollectorDiagnostic(
+      identifier: identifier,
+      status: detection.status,
+      sourceKind: .otlpHTTP,
+      parserVersion: GeminiTelemetryParser.parserVersion,
+      explanation: detection.explanation,
+      detectedVersion: detection.version)
+  }
+}

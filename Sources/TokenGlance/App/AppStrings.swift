@@ -93,6 +93,53 @@ struct AppStrings {
   var inputCost: String { pick(de: "Input $/M", en: "Input $/M") }
   var outputCost: String { pick(de: "Output $/M", en: "Output $/M") }
   var cachedCost: String { pick(de: "Cache $/M", en: "Cache $/M") }
+  var cacheWriteCost: String { pick(de: "Cache-Schreiben $/M", en: "Cache write $/M") }
+  var addPricePresets: String { pick(de: "Preisvorgaben aktualisieren", en: "Update price presets") }
+  var pricePresetNote: String {
+    pick(
+      de: "Öffentliche API-Preise (USD je 1 Mio. Tokens), geprüft am 24.10.2026. Schätzwerte, keine Rechnungsbeträge.",
+      en: "Public API prices (USD per 1M tokens), checked 2026-10-24. Estimates, not billed amounts.")
+  }
+  func priceSourceLabel(_ date: String) -> String {
+    pick(de: "Quelle · geprüft am \(date)", en: "Source · checked \(date)")
+  }
+  func overriddenPriceSourceLabel(_ date: String) -> String {
+    pick(de: "Lokale Preisänderung · Quelle geprüft am \(date)", en: "Local price override · source checked \(date)")
+  }
+  var usageBudgets: String { pick(de: "Nutzungsbudgets", en: "Usage Budgets") }
+  var budgetAlerts: String { pick(de: "Budgetmitteilungen", en: "Budget notifications") }
+  var addBudget: String { pick(de: "Budget hinzufügen", en: "Add budget") }
+  var budgetName: String { pick(de: "Budgetname", en: "Budget name") }
+  var budgetLimit: String { pick(de: "Limit", en: "Limit") }
+  var budgetPeriod: String { pick(de: "Zeitraum", en: "Period") }
+  var budgetMetric: String { pick(de: "Messgröße", en: "Measure") }
+  var budgetAlertMode: String { pick(de: "Warnen bei", en: "Alert when") }
+  var dailyBudget: String { pick(de: "Täglich", en: "Daily") }
+  var weeklyBudget: String { pick(de: "Wöchentlich", en: "Weekly") }
+  var monthlyBudget: String { pick(de: "Monatlich", en: "Monthly") }
+  var tokenBudget: String { pick(de: "Tokens", en: "Tokens") }
+  var costBudget: String { pick(de: "Geschätzte Kosten (USD)", en: "Estimated cost (USD)") }
+  var actualBudgetAlert: String { pick(de: "Tatsächlicher Verbrauch", en: "Actual usage") }
+  var forecastBudgetAlert: String { pick(de: "Prognose", en: "Forecast") }
+  var eitherBudgetAlert: String { pick(de: "Verbrauch oder Prognose", en: "Usage or forecast") }
+  var budgetAlertHelp: String {
+    pick(
+      de: "Warnungen bei 50 %, 80 % und 100 %. Kosten sind Schätzungen aus den aktiven Preisprofilen.",
+      en: "Alerts at 50%, 80%, and 100%. Costs are estimates based on active price profiles.")
+  }
+  var budgetNotificationTitle: String {
+    pick(de: "TokenGlance-Budgetwarnung", en: "TokenGlance budget alert")
+  }
+  func budgetNotificationBody(name: String, forecast: Bool, threshold: Int, amount: String) -> String {
+    if forecast {
+      return pick(
+        de: "\(name) wird voraussichtlich \(threshold) % erreichen (aktuell \(amount)).",
+        en: "\(name) is forecast to reach \(threshold)% (currently \(amount)).")
+    }
+    return pick(
+      de: "\(name) hat \(threshold) % erreicht (aktuell \(amount)).",
+      en: "\(name) reached \(threshold)% (currently \(amount)).")
+  }
   var estimated: String { pick(de: "geschätzt", en: "estimated") }
   var average: String { pick(de: "Ø", en: "avg") }
   var diagnosticsUnavailable: String {

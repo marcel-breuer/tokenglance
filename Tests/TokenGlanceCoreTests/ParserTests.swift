@@ -91,7 +91,32 @@ struct ParserTests {
     #expect(batch.events[0].tokens.outputTokens == 40)
     #expect(batch.events[0].tokens.reasoningTokens == 7)
     #expect(batch.events[0].provider == .google)
-    #expect(batch.events[0].tool == .antigravity)
+    #expect(batch.events[0].tool == .geminiCLI)
+    #expect(batch.events[0].sessionIdentifierHash == nil)
+    #expect(batch.events[0].projectIdentifierHash == nil)
+  }
+
+  @Test("Gemini OTLP metrics are reduced to allowlisted token metadata before persistence")
+  func geminiOTLPSanitizerRemovesContentAndSessionAttributes() throws {
+    let raw = Data(#"{"resourceMetrics":[{"resource":{"attributes":[{"key":"gen_ai.input.messages","value":{"stringValue":"PRIVATE_PROMPT"}}]},"scopeMetrics":[{"metrics":[{"name":"gen_ai.client.token.usage","histogram":{"dataPoints":[{"count":"1","sum":40,"timeUnixNano":"1782727200000000000","attributes":[{"key":"gen_ai.token.type","value":{"stringValue":"output"}},{"key":"gen_ai.request.model","value":{"stringValue":"gemini-3.8-flash"}},{"key":"gen_ai.conversation.id","value":{"stringValue":"PRIVATE_SESSION"}}]}]}},{"name":"gen_ai.client.operation.duration","sum":{"dataPoints":[]}}]}]}]}"#.utf8)
+    let sanitized = try #require(GeminiTelemetryParser.sanitizedMetricsJSONL(from: raw))
+    let text = try #require(String(data: sanitized, encoding: .utf8))
+    #expect(!text.contains("PRIVATE_PROMPT"))
+    #expect(!text.contains("PRIVATE_SESSION"))
+    #expect(!text.contains("operation.duration"))
+
+    let batch = GeminiTelemetryParser().parseJSONLines(sanitized, sourceFingerprint: "gemini")
+    #expect(batch.events.count == 1)
+    #expect(batch.events[0].tokens.outputTokens == 40)
+    #expect(batch.events[0].tool == .geminiCLI)
+    #expect(batch.events[0].model == "gemini-3.8-flash")
+    #expect(batch.events[0].sessionIdentifierHash == nil)
+  }
+
+  @Test("Gemini OTLP sanitizer rejects exports without token usage metrics")
+  func geminiOTLPSanitizerRejectsNonTokenExports() {
+    let raw = Data(#"{"resourceMetrics":[{"scopeMetrics":[{"metrics":[{"name":"gen_ai.client.operation.duration"}]}]}]}"#.utf8)
+    #expect(GeminiTelemetryParser.sanitizedMetricsJSONL(from: raw) == nil)
   }
 
   @Test("Manual CSV import accepts general AI tool metadata")

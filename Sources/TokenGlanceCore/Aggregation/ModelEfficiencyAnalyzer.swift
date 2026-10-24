@@ -57,8 +57,10 @@ public struct ModelEfficiencyAnalyzer: Sendable {
     let inputCost = Double(tokens.inputTokens ?? 0) / 1_000_000 * profile.inputCostPerMillion
     let outputCost = Double(tokens.outputTokens ?? 0) / 1_000_000 * profile.outputCostPerMillion
     let cachedCost =
-      Double((tokens.cachedInputTokens ?? 0) + (tokens.cacheCreationTokens ?? 0)) / 1_000_000
-      * profile.cachedInputCostPerMillion
-    return inputCost + outputCost + cachedCost
+      Double(tokens.cachedInputTokens ?? 0) / 1_000_000 * profile.cachedInputCostPerMillion
+    let cacheCreationRate = profile.cacheCreationCostPerMillion ?? profile.cachedInputCostPerMillion
+    let cacheCreationCost =
+      Double(tokens.cacheCreationTokens ?? 0) / 1_000_000 * cacheCreationRate
+    return inputCost + outputCost + cachedCost + cacheCreationCost
   }
 }

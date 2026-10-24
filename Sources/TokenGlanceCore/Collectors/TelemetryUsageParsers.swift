@@ -141,9 +141,70 @@ public struct ClaudeTelemetryParser: Sendable {
 }
 
 public struct GeminiTelemetryParser: Sendable {
-  public static let parserVersion = "gemini-cli-telemetry-token-usage-v2"
+  public static let parserVersion = "gemini-cli-otel-token-usage-v3"
+
+  private static let tokenMetricNames: Set<String> = [
+    "gen_ai.client.token.usage",
+    "gemini_cli.token.usage",
+  ]
 
   public init() {}
+
+  /// Converts an OTLP metrics export into token-only JSONL before anything is
+  /// written to disk. Unknown metrics and all non-allowlisted attributes are
+  /// discarded, including resource, session, trace, prompt, and tool fields.
+  public static func sanitizedMetricsJSONL(from data: Data) -> Data? {
+    guard let root = (try? JSONSerialization.jsonObject(with: data)) as? [String: Any],
+      let resourceMetrics = root["resourceMetrics"] as? [[String: Any]]
+    else { return nil }
+
+    var lines: [String] = []
+    for resource in resourceMetrics {
+      for scope in resource["scopeMetrics"] as? [[String: Any]] ?? [] {
+        for metric in scope["metrics"] as? [[String: Any]] ?? [] {
+          guard let name = metric["name"] as? String, tokenMetricNames.contains(name) else {
+            continue
+          }
+          let sum = metric["sum"] as? [String: Any]
+          let histogram = metric["histogram"] as? [String: Any]
+          let points = (sum?["dataPoints"] as? [[String: Any]])
+            ?? (histogram?["dataPoints"] as? [[String: Any]]) ?? []
+          for point in points {
+            let attributes = pointAttributes(point["attributes"] as? [[String: Any]] ?? [])
+            guard let count = integer(point["asInt"] ?? point["sum"] ?? point["asDouble"]), count > 0 else {
+              continue
+            }
+            let type = attributes["gen_ai.token.type"] ?? attributes["type"] ?? ""
+            let field: String
+            switch type.lowercased() {
+            case "input", "prompt": field = "input_token_count"
+            case "output", "completion": field = "output_token_count"
+            case "cached", "cache", "cache_read": field = "cached_content_token_count"
+            case "reasoning", "thoughts": field = "thoughts_token_count"
+            default: continue
+            }
+            var safeAttributes: [String: Any] = [field: count]
+            if let model = attributes["gen_ai.request.model"] ?? attributes["gen_ai.response.model"] {
+              safeAttributes["model"] = model
+            }
+            var line: [String: Any] = [
+              "name": "gemini_cli.api_response",
+              "attributes": safeAttributes,
+            ]
+            if let timestamp = point["timeUnixNano"] as? String {
+              line["timestamp"] = DateParser.isoTimestamp(fromUnixNanoString: timestamp)
+            }
+            guard let encoded = try? JSONSerialization.data(withJSONObject: line),
+              let text = String(data: encoded, encoding: .utf8)
+            else { continue }
+            lines.append(text)
+          }
+        }
+      }
+    }
+    guard !lines.isEmpty else { return nil }
+    return Data((lines.joined(separator: "\n") + "\n").utf8)
+  }
 
   public func parseJSONLines(
     _ data: Data,
@@ -181,13 +242,6 @@ public struct GeminiTelemetryParser: Sendable {
       guard tokens.calculatedTotal > 0 else { continue }
       let model = JSONMetadata.string(
         attributes, keys: ["model", "gen_ai.request.model", "gen_ai.response.model"])
-      let session = JSONMetadata.string(attributes, keys: ["session_id", "session.id"])
-      let project = JSONMetadata.string(
-        attributes,
-        keys: [
-          "project", "project_id", "workspace", "workspace_id", "cwd", "working_directory",
-          "git_root",
-        ])
       let timestamp =
         JSONMetadata.date(object, keys: ["timestamp", "time"], using: dateParser) ?? importedAt
       let id = Hashing.sha256(
@@ -196,15 +250,15 @@ public struct GeminiTelemetryParser: Sendable {
       events.append(
         UsageEvent(
           id: id,
-          collector: .antigravity,
-          tool: .antigravity,
+          collector: .geminiCLI,
+          tool: .geminiCLI,
           provider: .google,
           model: model,
           timestamp: timestamp,
           tokens: tokens,
-          sessionIdentifierHash: session.map { Hashing.privacyHash($0, salt: privacySalt) },
-          projectIdentifierHash: project.map { Hashing.privacyHash($0, salt: privacySalt) },
-          sourceKind: .localTelemetry,
+          sessionIdentifierHash: nil,
+          projectIdentifierHash: nil,
+          sourceKind: .otlpHTTP,
           sourceFingerprint: sourceFingerprint,
           accuracy: .exact,
           parserVersion: Self.parserVersion,
@@ -213,5 +267,34 @@ public struct GeminiTelemetryParser: Sendable {
     }
 
     return CollectionBatch(events: events, importedRecords: events.count, invalidRecords: invalid)
+  }
+
+  private static func pointAttributes(_ attributes: [[String: Any]]) -> [String: String] {
+    var result: [String: String] = [:]
+    for attribute in attributes {
+      guard let key = attribute["key"] as? String,
+        ["gen_ai.token.type", "type", "gen_ai.request.model", "gen_ai.response.model"].contains(key),
+        let value = attribute["value"] as? [String: Any]
+      else { continue }
+      if let string = value["stringValue"] as? String { result[key] = string }
+    }
+    return result
+  }
+
+  private static func integer(_ value: Any?) -> Int? {
+    if let value = value as? Int { return value }
+    if let value = value as? String { return Int(value) }
+    if let value = value as? Double, value.isFinite, value >= 0, value <= Double(Int.max) {
+      return Int(value)
+    }
+    return nil
+  }
+
+  private struct DateParser {
+    static func isoTimestamp(fromUnixNanoString value: String) -> String? {
+      guard let nanos = UInt64(value) else { return nil }
+      let date = Date(timeIntervalSince1970: TimeInterval(nanos) / 1_000_000_000)
+      return ISO8601DateFormatter().string(from: date)
+    }
   }
 }

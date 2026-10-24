@@ -93,5 +93,22 @@ struct SettingsTests {
     let settings = try JSONDecoder().decode(AppSettings.self, from: Data(json.utf8))
     #expect(settings.modelCostProfiles.count == 1)
     #expect(settings.modelCostProfiles[0].matches(model: "gpt-5"))
+    #expect(settings.modelCostProfiles[0].currencyCode == "USD")
+    #expect(!settings.modelCostProfiles[0].isPreset)
+  }
+
+  @Test("Price catalog updates untouched presets and preserves user overrides")
+  func priceCatalogPreservesCustomProfiles() {
+    let custom = ModelCostProfile(
+      modelPattern: "my-private-model", inputCostPerMillion: 7, outputCostPerMillion: 9)
+    let profiles = ModelCostCatalog.updating([custom])
+    #expect(profiles.first == custom)
+    #expect(ModelCostCatalog.updating(profiles) == profiles)
+    #expect(profiles.filter(\.isPreset).count == ModelCostCatalog.presets.count)
+
+    var overridden = profiles
+    overridden[1].inputCostPerMillion = 999
+    overridden[1].hasUserOverride = true
+    #expect(ModelCostCatalog.updating(overridden)[1].inputCostPerMillion == 999)
   }
 }

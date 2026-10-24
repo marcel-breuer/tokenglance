@@ -11,6 +11,7 @@ public enum CollectorIdentifier: String, Codable, CaseIterable, Sendable {
     .codexCLI,
     .claudeCode,
     .antigravity,
+    .geminiCLI,
   ]
 
   public var displayName: String {
@@ -18,7 +19,7 @@ public enum CollectorIdentifier: String, Codable, CaseIterable, Sendable {
     case .codexCLI: "Codex CLI"
     case .claudeCode: "Claude Code"
     case .antigravity: "Antigravity"
-    case .geminiCLI: "Gemini CLI Legacy"
+    case .geminiCLI: "Gemini CLI"
     case .manualImport: "Manual Import"
     }
   }

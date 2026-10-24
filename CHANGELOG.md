@@ -4,6 +4,9 @@
 
 ### Changed
 
+- Added opt-in Gemini CLI token collection through a loopback-only OTLP receiver that persists allowlisted usage metadata only.
+- Added local daily, weekly, and monthly token or estimated-cost budgets with configurable thresholds and pace-aware macOS notifications.
+- Added source-linked public model price presets, separate cache-write rates, and visible checked dates for local cost estimates.
 - Added automatic live refresh so exact local token metadata is imported without pressing refresh manually.
 - Replaced Gemini CLI detection with Antigravity CLI detection through `agy`.
 - Added a generated macOS app icon.
