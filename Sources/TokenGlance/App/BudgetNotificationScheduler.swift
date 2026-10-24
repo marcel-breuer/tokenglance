@@ -7,7 +7,11 @@ final class BudgetNotificationScheduler {
   private let center = UNUserNotificationCenter.current()
 
   func deliver(_ alert: UsageBudgetAlert, language: AppLanguage) async -> Bool {
-    let granted = (try? await center.requestAuthorization(options: [.alert, .sound])) ?? false
+    let granted: Bool = await withCheckedContinuation { continuation in
+      center.requestAuthorization(options: [.alert, .sound]) { allowed, _ in
+        continuation.resume(returning: allowed)
+      }
+    }
     guard granted else { return false }
 
     let content = UNMutableNotificationContent()
@@ -22,11 +26,10 @@ final class BudgetNotificationScheduler {
       threshold: alert.threshold, amount: amount)
     content.sound = .default
     let request = UNNotificationRequest(identifier: alert.id, content: content, trigger: nil)
-    do {
-      try await center.add(request)
-      return true
-    } catch {
-      return false
+    return await withCheckedContinuation { continuation in
+      center.add(request) { error in
+        continuation.resume(returning: error == nil)
+      }
     }
   }
 }
