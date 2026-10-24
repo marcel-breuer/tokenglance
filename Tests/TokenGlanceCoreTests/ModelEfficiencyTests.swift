@@ -30,6 +30,29 @@ struct ModelEfficiencyTests {
     #expect(rows[0].estimatedCost == 0.03425)
     #expect(rows[1].estimatedCost == nil)
   }
+
+  @Test("Bundled model prices preserve source metadata and can estimate cache writes separately")
+  func catalogProfilesAndCacheWriteRates() {
+    let profile = ModelCostCatalog.presets.first { $0.modelPattern == "claude-sonnet-5.5" }!
+    let event = event(
+      id: "cached", model: "claude-sonnet-5.5", input: 0, output: 0, cached: 0, reasoning: 0)
+    let withWrite = UsageEvent(
+      id: event.id, collector: event.collector, tool: event.tool, provider: event.provider,
+      model: event.model, timestamp: event.timestamp,
+      tokens: TokenBreakdown(cacheCreationTokens: 1_000_000), sessionIdentifierHash: nil,
+      projectIdentifierHash: nil, sourceKind: event.sourceKind,
+      sourceFingerprint: event.sourceFingerprint, accuracy: event.accuracy,
+      parserVersion: event.parserVersion)
+
+    let row = ModelEfficiencyAnalyzer().analyze(events: [withWrite], costProfiles: [profile])[0]
+
+    #expect(row.estimatedCost == 2.5)
+    #expect(profile.provider == .anthropic)
+    #expect(profile.sourceURL?.contains("platform.claude.com") == true)
+    #expect(profile.checkedOn == ModelCostCatalog.checkedOn)
+    #expect(profile.catalogVersion == ModelCostCatalog.version)
+    #expect(profile.isPreset)
+  }
 }
 
 private func event(

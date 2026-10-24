@@ -19,6 +19,10 @@ export without sending usage data to a backend.
 
 All dashboard sections follow the selected period, tool, and model filters.
 
+**Budgets** track local daily, weekly, or monthly token and estimated-cost limits.
+macOS notifications can fire at 50%, 80%, and 100% of a budget or when current
+pace projects a threshold crossing.
+
 ## Project Usage
 
 Project Usage groups events by project metadata when a collector or import file
@@ -50,15 +54,20 @@ at a configurable interval and imports only incremental metadata changes.
 
 ## Collectors and imports
 
-Built-in collectors support verified local metadata from Codex CLI, a documented
-Claude Code telemetry format, and safe Antigravity CLI detection. Manual CSV or
-JSON import supports metadata exports from ChatGPT, Claude, Gemini, OpenAI API,
-Anthropic API, and Google AI API.
+Built-in collectors support verified local metadata from Codex CLI, documented
+Claude Code telemetry, allowlisted Gemini CLI OpenTelemetry metrics, and safe
+Antigravity CLI detection. Manual CSV or JSON import supports metadata exports
+from ChatGPT, Claude, Gemini, OpenAI API, Anthropic API, and Google AI API.
 
 Imports normalize metadata fields into the same `UsageEvent` model. Prompt text,
 responses, messages, source code, credentials, browser data, cookies, private
 provider APIs, and raw content fields are ignored and never written to the
 local database.
+
+Gemini CLI telemetry is opt-in. The receiver discards all incoming fields
+except token counts, token category, model, and timestamp before persisting
+anything locally. Bundled API price presets are source-linked; estimates based
+on public prices are not actual subscription, negotiated, or invoice costs.
 
 ## Reports and diagnostics
 

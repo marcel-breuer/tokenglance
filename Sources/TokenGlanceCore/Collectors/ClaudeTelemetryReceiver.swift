@@ -20,14 +20,20 @@ public actor ClaudeTelemetryReceiver {
 
   private let requestedPort: UInt16
   private let destinationDirectory: URL
+  private let filePrefix: String
+  private let payloadSanitizer: (@Sendable (Data) -> Data?)?
   private var listener: NWListener?
 
   public init(
     port: UInt16 = ClaudeTelemetryReceiver.defaultPort,
-    destinationDirectory: URL = ClaudeCodeCollector.defaultSourceDirectories[0]
+    destinationDirectory: URL = ClaudeCodeCollector.defaultSourceDirectories[0],
+    filePrefix: String = "claude-otel",
+    payloadSanitizer: (@Sendable (Data) -> Data?)? = nil
   ) {
     self.requestedPort = port
     self.destinationDirectory = destinationDirectory
+    self.filePrefix = filePrefix
+    self.payloadSanitizer = payloadSanitizer
   }
 
   public var isRunning: Bool { listener != nil }
@@ -107,15 +113,33 @@ public actor ClaudeTelemetryReceiver {
   }
 
   private func persist(body: Data) {
-    guard !body.isEmpty,
-      let text = String(data: body, encoding: .utf8),
-      (try? JSONSerialization.jsonObject(with: body)) != nil
+    let persistedBody: Data
+    if let payloadSanitizer {
+      guard let sanitized = payloadSanitizer(body) else { return }
+      persistedBody = sanitized
+    } else {
+      persistedBody = body
+    }
+    guard !persistedBody.isEmpty,
+      let text = String(data: persistedBody, encoding: .utf8)
     else { return }
+    let isJSON = (try? JSONSerialization.jsonObject(with: persistedBody)) != nil
+    let isJSONL = text.split(whereSeparator: \.isNewline).allSatisfy {
+      (try? JSONSerialization.jsonObject(with: Data($0.utf8))) != nil
+    }
+    guard isJSON || isJSONL else { return }
+    let lineData: Data
+    if payloadSanitizer != nil {
+      lineData = Data((text.hasSuffix("\n") ? text : text + "\n").utf8)
+    } else {
+      guard let object = try? JSONSerialization.jsonObject(with: persistedBody),
+        let compact = try? JSONSerialization.data(withJSONObject: object)
+      else { return }
+      lineData = compact + Data("\n".utf8)
+    }
 
-    let singleLine = text.replacingOccurrences(of: "\n", with: " ")
-    guard let lineData = (singleLine + "\n").data(using: .utf8) else { return }
-
-    let fileURL = destinationDirectory.appendingPathComponent(Self.fileName(for: Date()))
+    let fileURL = destinationDirectory.appendingPathComponent(
+      Self.fileName(for: Date(), prefix: filePrefix))
     if let handle = try? FileHandle(forWritingTo: fileURL) {
       defer { try? handle.close() }
       do {
@@ -141,11 +165,11 @@ public actor ClaudeTelemetryReceiver {
       })
   }
 
-  private static func fileName(for date: Date) -> String {
+  private static func fileName(for date: Date, prefix: String) -> String {
     let formatter = DateFormatter()
     formatter.dateFormat = "yyyy-MM-dd"
     formatter.timeZone = TimeZone(identifier: "UTC")
-    return "claude-otel-\(formatter.string(from: date)).jsonl"
+    return "\(prefix)-\(formatter.string(from: date)).jsonl"
   }
 }
 

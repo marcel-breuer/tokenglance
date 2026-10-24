@@ -11,12 +11,19 @@ final class AppDependencies: ObservableObject {
   let modelEfficiencyAnalyzer = ModelEfficiencyAnalyzer()
   let projectUsageAnalyzer = ProjectUsageAnalyzer()
   let usageAnomalyAnalyzer = UsageAnomalyAnalyzer()
+  let usageBudgetAnalyzer = UsageBudgetAnalyzer()
+  let budgetNotificationScheduler = BudgetNotificationScheduler()
   let schemaDriftRadar = SchemaDriftRadar()
   let diagnosticsBuilder = DiagnosticsBuilder()
   let weeklyReportBuilder = WeeklyUsageReportBuilder()
   let reportArchive = LocalReportArchive()
   let updateRelaunchMonitor = UpdateRelaunchMonitor()
   let claudeTelemetryReceiver = ClaudeTelemetryReceiver()
+  let geminiTelemetryReceiver = ClaudeTelemetryReceiver(
+    port: GeminiCLICollector.receiverPort,
+    destinationDirectory: GeminiCLICollector.defaultSourceDirectories[0],
+    filePrefix: "gemini-cli-otel",
+    payloadSanitizer: GeminiTelemetryParser.sanitizedMetricsJSONL(from:))
   let collectors: [any UsageCollector]
 
   @Published var settings = AppSettings()
@@ -48,13 +55,18 @@ final class AppDependencies: ObservableObject {
   deinit {
     liveRefreshTask?.cancel()
     let receiver = claudeTelemetryReceiver
-    Task { await receiver.stop() }
+    let geminiReceiver = geminiTelemetryReceiver
+    Task {
+      await receiver.stop()
+      await geminiReceiver.stop()
+    }
   }
 
   init() {
     collectors = [
       CodexCLICollector(),
       ClaudeCodeCollector(configurator: ClaudeCodeTelemetryConfigurator()),
+      GeminiCLICollector(),
       AntigravityCollector(),
     ]
   }
@@ -68,6 +80,9 @@ final class AppDependencies: ObservableObject {
         selectedPeriod = settings.defaultReportingPeriod
         try await database.open()
         _ = try? await claudeTelemetryReceiver.start()
+        if settings.enabledCollectors.contains(.geminiCLI) {
+          _ = try? await geminiTelemetryReceiver.start()
+        }
         await refresh(mode: .full)
         configureLiveRefresh()
         updateRelaunchMonitor.start()
@@ -115,6 +130,7 @@ final class AppDependencies: ObservableObject {
     }
 
     lastRefresh = Date()
+    await checkBudgetAlerts()
     await loadMenuBarSummary()
     await loadSummary(animated: mode == .full)
     if shouldUpdateDiagnostics {
@@ -187,8 +203,35 @@ final class AppDependencies: ObservableObject {
     configureLiveRefresh()
     Task {
       try? await settingsStore.save(settings)
+      if settings.enabledCollectors.contains(.geminiCLI) {
+        if !(await geminiTelemetryReceiver.isRunning) {
+          _ = try? await geminiTelemetryReceiver.start()
+        }
+      } else {
+        await geminiTelemetryReceiver.stop()
+      }
       await loadSummary()
     }
+  }
+
+  private func checkBudgetAlerts() async {
+    guard settings.budgetAlertsEnabled else { return }
+    let now = Date()
+    for budget in settings.usageBudgets where budget.isEnabled {
+      let start = usageBudgetAnalyzer.periodStart(for: budget.period, at: now)
+      guard let events = try? await database.fetchEvents(from: start, to: now) else { continue }
+      let alerts = usageBudgetAnalyzer.analyze(
+        budget: budget, events: events, costProfiles: settings.modelCostProfiles, now: now)
+      for alert in alerts where !settings.deliveredBudgetAlerts.contains(alert.id) {
+        if await budgetNotificationScheduler.deliver(alert, language: settings.language) {
+          settings.deliveredBudgetAlerts.insert(alert.id)
+        }
+      }
+    }
+    if settings.deliveredBudgetAlerts.count > 512 {
+      settings.deliveredBudgetAlerts = Set(settings.deliveredBudgetAlerts.sorted().suffix(384))
+    }
+    try? await settingsStore.save(settings)
   }
 
   func deleteAllData() {

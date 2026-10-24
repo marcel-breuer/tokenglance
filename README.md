@@ -23,13 +23,16 @@ browser data, credentials, cookies, or private provider APIs.
   today's token total visible without opening the dashboard.
 - Local anomaly detection that highlights unusual hourly or daily token spikes
   against recent usage history.
+- Daily, weekly, or monthly token and estimated-cost budgets with pace-aware
+  macOS notifications.
 - Tooltip details for peak hour, top model, cache share, burn rate, and
   projected daily usage.
 - Token Weather for current usage intensity: calm, active, or stormy.
 - Dashboard for today, last 24 hours, last 7 days, and last 30 days.
 - Breakdown by input, output, cache, and reasoning tokens where available.
 - Model Efficiency view with average tokens per event, cache share, reasoning
-  share, and optional local cost estimates.
+  share, and optional local cost estimates from editable profiles or bundled,
+  source-linked API price presets.
 - Project Usage view grouped by locally hashed project metadata, with event
   counts, latest activity, and optional local cost estimates.
 - Local cost profiles for private, user-defined model price estimates.
@@ -104,6 +107,7 @@ installing.
 | ---- | --------- | ----------------- | ------------ | ---------------- | -------- | -------------- |
 | Codex CLI | Yes | Yes, from verified local JSONL token metadata | Reconciliation | input, output, cached input, reasoning, total when present | Exact | No |
 | Claude Code | Yes | No by default | Telemetry parser available | input, output, cache read, cache creation | Exact when telemetry is configured | Yes |
+| Gemini CLI | Yes | No by default | Local OpenTelemetry metrics receiver | input, output, cached input, reasoning where emitted | Exact for allowlisted token metrics | Yes |
 | Antigravity | Yes, via `agy --version` | Not yet | Not yet | Not yet verified | Unavailable until a documented local token metadata source is verified | Yes |
 | Manual import | User-selected CSV/JSON file | Yes | On demand | input, output, cached input, cache creation, reasoning, other, total | Exact for user-provided metadata | No |
 
@@ -114,9 +118,12 @@ Codex usage is imported from local token-count metadata in:
 ~/.codex/archived_sessions/
 ```
 
-Antigravity is detected safely, but TokenGlance does not read Antigravity
-conversations, logs, browser-style storage, or credentials until a documented
-local token metadata source is verified.
+Gemini CLI collection uses its documented OpenTelemetry metrics and a local
+loopback receiver. Setup must disable prompt logging and traces. The receiver
+keeps only token counts, model, category, and timestamp before writing to disk;
+it drops all other telemetry attributes. Antigravity is detected safely, but
+TokenGlance does not read Antigravity conversations, logs, browser-style storage,
+or credentials until a documented local token metadata source is verified.
 
 Manual import is the supported path for broader AI usage today. TokenGlance can
 ingest metadata rows for ChatGPT, Claude, Gemini, OpenAI API, Anthropic API, and
@@ -176,7 +183,10 @@ TokenGlance is built around metadata-only insight:
 - **Anomaly Detection**: unusual hourly or daily token spikes compared with
   recent local usage buckets, without reading prompts or responses.
 - **Cost Profiles**: local user-defined model pricing; no billing API or cloud
-  account required.
+  account required. Optional bundled API price presets include source links and
+  a checked date; estimates are not actual subscription or invoice charges.
+- **Budgets**: local token or estimated-cost limits for daily, weekly, and
+  monthly periods, with threshold and pace-based macOS notifications.
 - **Weekly Reports**: Markdown reports with trends, peak hour, top models, cache
   share, and token mix, archived locally.
 - **Schema Drift Radar**: diagnostics for local metadata records that are present
