@@ -42,3 +42,10 @@ Output:
 
 - Keep progress reports concise and token-efficient.
 - Report failures and remaining blockers exactly; do not fabricate support claims.
+
+## User interface work
+
+- For new SwiftUI views, UI redesigns, and focused UI reviews, use the project skill in `.agents/skills/unslop/SKILL.md` (`$unslop`). Read its audit before editing and keep existing product behavior, branding, design tokens, and reusable components.
+- Audit the current UI first. If it is already well designed, make only evidence-based fixes; do not redesign it without a concrete issue.
+- The upstream skill's snapshot and story scripts target browser pages. For SwiftUI, inspect the native view and use an available macOS/Xcode screenshot workflow; do not treat browser-only steps as applicable.
+- Preserve the skill's attribution and version record when updating it.
