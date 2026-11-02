@@ -121,7 +121,7 @@ struct DashboardView: View {
         collectorModules
         breakdownColumns
       }
-      .padding(14)
+      .padding(16)
     }
   }
 
@@ -201,8 +201,7 @@ struct DashboardView: View {
         MetricRow(label: strings.reasoning, value: totals.reasoningTokens, color: .orange)
       }
     }
-    .padding(12)
-    .background(.background.secondary, in: RoundedRectangle(cornerRadius: 8))
+    .dashboardCard()
   }
 
   private var pulsePanel: some View {
@@ -225,8 +224,7 @@ struct DashboardView: View {
           .font(.headline.monospacedDigit().weight(.semibold))
       }
     }
-    .padding(12)
-    .background(.background.secondary, in: RoundedRectangle(cornerRadius: 8))
+    .dashboardCard()
     .accessibilityIdentifier("usage-pulse-panel")
   }
 
@@ -246,7 +244,7 @@ struct DashboardView: View {
           x: .value(strings.chartTime, bucket.start),
           y: .value(strings.chartTokens, bucket.tokens.calculatedTotal)
         )
-        .foregroundStyle(Color.accentColor.gradient)
+        .foregroundStyle(Color.accentColor)
         .cornerRadius(3)
       }
       .chartXAxis(.automatic)
@@ -266,8 +264,7 @@ struct DashboardView: View {
       .frame(height: 136)
       .accessibilityIdentifier("usage-chart")
     }
-    .padding(12)
-    .background(.background.secondary, in: RoundedRectangle(cornerRadius: 8))
+    .dashboardCard()
   }
 
   private var collectorModules: some View {
@@ -286,8 +283,7 @@ struct DashboardView: View {
         )
       }
     }
-    .padding(12)
-    .background(.background.secondary, in: RoundedRectangle(cornerRadius: 8))
+    .dashboardCard()
   }
 
   private var projectUsagePanel: some View {
@@ -314,8 +310,7 @@ struct DashboardView: View {
         }
       }
     }
-    .padding(12)
-    .background(.background.secondary, in: RoundedRectangle(cornerRadius: 8))
+    .dashboardCard()
     .accessibilityIdentifier("project-usage-panel")
   }
 
@@ -345,8 +340,7 @@ struct DashboardView: View {
         }
       }
     }
-    .padding(12)
-    .background(.background.secondary, in: RoundedRectangle(cornerRadius: 8))
+    .dashboardCard()
     .accessibilityIdentifier("model-efficiency-panel")
   }
 
@@ -374,8 +368,7 @@ struct DashboardView: View {
         }
       }
     }
-    .padding(12)
-    .background(.background.secondary, in: RoundedRectangle(cornerRadius: 8))
+    .dashboardCard()
     .accessibilityIdentifier("usage-anomalies-panel")
   }
 
@@ -637,6 +630,27 @@ private enum TokenNumberFormat {
   }
 }
 
+private struct DashboardCardStyle: ViewModifier {
+  func body(content: Content) -> some View {
+    content
+      .padding(16)
+      .background(
+        .background.secondary,
+        in: RoundedRectangle(cornerRadius: 12, style: .continuous)
+      )
+      .overlay {
+        RoundedRectangle(cornerRadius: 12, style: .continuous)
+          .strokeBorder(Color.primary.opacity(0.07), lineWidth: 1)
+      }
+  }
+}
+
+private extension View {
+  func dashboardCard() -> some View {
+    modifier(DashboardCardStyle())
+  }
+}
+
 private struct CollectorModuleRow: View {
   let name: String
   let status: CollectorStatus
@@ -707,7 +721,6 @@ private struct BreakdownList: View {
       }
     }
     .frame(maxWidth: .infinity, alignment: .topLeading)
-    .padding(12)
-    .background(.background.secondary, in: RoundedRectangle(cornerRadius: 8))
+    .dashboardCard()
   }
 }
