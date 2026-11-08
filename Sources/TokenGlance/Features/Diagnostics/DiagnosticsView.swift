@@ -9,7 +9,9 @@ struct DiagnosticsView: View {
         .font(.system(.caption, design: .monospaced))
         .frame(maxWidth: .infinity, alignment: .leading)
         .textSelection(.enabled)
-        .padding()
+        .padding(12)
+        .glassSurface(cornerRadius: 10)
     }
+    .padding(16)
   }
 }

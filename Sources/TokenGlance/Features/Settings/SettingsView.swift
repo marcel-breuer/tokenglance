@@ -1,9 +1,11 @@
+import AppKit
 import ServiceManagement
 import SwiftUI
 import TokenGlanceCore
 
 struct SettingsView: View {
   @EnvironmentObject private var dependencies: AppDependencies
+  @Environment(\.accessibilityReduceTransparency) private var reduceTransparency
   private var strings: AppStrings { AppStrings(dependencies.settings.language) }
 
   var body: some View {
@@ -116,6 +118,8 @@ struct SettingsView: View {
                 .font(.caption)
             }
           }
+          .padding(12)
+          .glassSurface(cornerRadius: 12)
         }
         Button {
           dependencies.settings.modelCostProfiles.append(
@@ -175,6 +179,8 @@ struct SettingsView: View {
               }
             }
           }
+          .padding(12)
+          .glassSurface(cornerRadius: 12)
           .disabled(!dependencies.settings.budgetAlertsEnabled)
         }
         Button {
@@ -209,7 +215,13 @@ struct SettingsView: View {
           .foregroundStyle(.secondary)
       }
     }
-    .padding()
+    .scrollContentBackground(.hidden)
+    .background(
+      reduceTransparency
+        ? AnyShapeStyle(Color(nsColor: .windowBackgroundColor))
+        : AnyShapeStyle(.regularMaterial)
+    )
+    .padding(16)
     .frame(width: 440)
     .onChange(of: dependencies.settings) { _, _ in dependencies.saveSettings() }
   }

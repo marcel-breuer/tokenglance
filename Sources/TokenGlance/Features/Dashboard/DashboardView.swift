@@ -1,3 +1,4 @@
+import AppKit
 import Charts
 import SwiftUI
 import TokenGlanceCore
@@ -5,6 +6,7 @@ import UniformTypeIdentifiers
 
 struct DashboardView: View {
   @EnvironmentObject private var dependencies: AppDependencies
+  @Environment(\.accessibilityReduceTransparency) private var reduceTransparency
   @State private var mode: DashboardMode = .overview
   @State private var isImportingUsageFile = false
   private var strings: AppStrings { AppStrings(dependencies.settings.language) }
@@ -12,10 +14,13 @@ struct DashboardView: View {
   var body: some View {
     VStack(spacing: 0) {
       topBar
-      Divider()
       content
     }
-    .background(.regularMaterial)
+    .background(
+      reduceTransparency
+        ? AnyShapeStyle(Color(nsColor: .windowBackgroundColor))
+        : AnyShapeStyle(.regularMaterial)
+    )
     .task {
       if dependencies.summary == nil {
         await dependencies.refresh()
@@ -92,6 +97,17 @@ struct DashboardView: View {
     }
     .padding(.horizontal, 14)
     .padding(.vertical, 10)
+    .background(
+      reduceTransparency
+        ? AnyShapeStyle(Color(nsColor: .controlBackgroundColor))
+        : AnyShapeStyle(.thinMaterial)
+    )
+    .overlay(alignment: .bottom) {
+      Rectangle()
+        .fill(Color.primary.opacity(0.08))
+        .frame(height: 1)
+        .accessibilityHidden(true)
+    }
   }
 
   @ViewBuilder
@@ -416,7 +432,8 @@ struct DashboardView: View {
         .textSelection(.enabled)
         .padding(10)
       }
-      .background(.background.secondary, in: RoundedRectangle(cornerRadius: 8))
+      .padding(10)
+      .glassSurface(cornerRadius: 10)
     }
     .padding(14)
   }
@@ -634,14 +651,7 @@ private struct DashboardCardStyle: ViewModifier {
   func body(content: Content) -> some View {
     content
       .padding(16)
-      .background(
-        .background.secondary,
-        in: RoundedRectangle(cornerRadius: 12, style: .continuous)
-      )
-      .overlay {
-        RoundedRectangle(cornerRadius: 12, style: .continuous)
-          .strokeBorder(Color.primary.opacity(0.07), lineWidth: 1)
-      }
+      .glassSurface(cornerRadius: 12)
   }
 }
 
