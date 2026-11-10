@@ -19,7 +19,7 @@ struct OnboardingView: View {
         .keyboardShortcut(.defaultAction)
     }
     .padding(20)
-    .glassSurface(cornerRadius: 16)
+    .glassSurface(.dialog)
     .padding(16)
   }
 }
