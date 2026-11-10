@@ -6,7 +6,6 @@ import UniformTypeIdentifiers
 
 struct DashboardView: View {
   @EnvironmentObject private var dependencies: AppDependencies
-  @Environment(\.accessibilityReduceTransparency) private var reduceTransparency
   @State private var mode: DashboardMode = .overview
   @State private var isImportingUsageFile = false
   private var strings: AppStrings { AppStrings(dependencies.settings.language) }
@@ -16,11 +15,7 @@ struct DashboardView: View {
       topBar
       content
     }
-    .background(
-      reduceTransparency
-        ? AnyShapeStyle(Color(nsColor: .windowBackgroundColor))
-        : AnyShapeStyle(.regularMaterial)
-    )
+    .glassBackdrop()
     .task {
       if dependencies.summary == nil {
         await dependencies.refresh()
@@ -97,17 +92,7 @@ struct DashboardView: View {
     }
     .padding(.horizontal, 14)
     .padding(.vertical, 10)
-    .background(
-      reduceTransparency
-        ? AnyShapeStyle(Color(nsColor: .controlBackgroundColor))
-        : AnyShapeStyle(.thinMaterial)
-    )
-    .overlay(alignment: .bottom) {
-      Rectangle()
-        .fill(Color.primary.opacity(0.08))
-        .frame(height: 1)
-        .accessibilityHidden(true)
-    }
+    .glassChrome()
   }
 
   @ViewBuilder
@@ -433,7 +418,7 @@ struct DashboardView: View {
         .padding(10)
       }
       .padding(10)
-      .glassSurface(cornerRadius: 10)
+      .glassSurface(.panel)
     }
     .padding(14)
   }
@@ -651,7 +636,7 @@ private struct DashboardCardStyle: ViewModifier {
   func body(content: Content) -> some View {
     content
       .padding(16)
-      .glassSurface(cornerRadius: 12)
+      .glassSurface(.panel)
   }
 }
 

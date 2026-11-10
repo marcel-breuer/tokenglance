@@ -5,7 +5,6 @@ import TokenGlanceCore
 
 struct SettingsView: View {
   @EnvironmentObject private var dependencies: AppDependencies
-  @Environment(\.accessibilityReduceTransparency) private var reduceTransparency
   private var strings: AppStrings { AppStrings(dependencies.settings.language) }
 
   var body: some View {
@@ -119,7 +118,7 @@ struct SettingsView: View {
             }
           }
           .padding(12)
-          .glassSurface(cornerRadius: 12)
+          .glassSurface(.panel)
         }
         Button {
           dependencies.settings.modelCostProfiles.append(
@@ -180,7 +179,7 @@ struct SettingsView: View {
             }
           }
           .padding(12)
-          .glassSurface(cornerRadius: 12)
+          .glassSurface(.panel)
           .disabled(!dependencies.settings.budgetAlertsEnabled)
         }
         Button {
@@ -216,11 +215,7 @@ struct SettingsView: View {
       }
     }
     .scrollContentBackground(.hidden)
-    .background(
-      reduceTransparency
-        ? AnyShapeStyle(Color(nsColor: .windowBackgroundColor))
-        : AnyShapeStyle(.regularMaterial)
-    )
+    .glassBackdrop()
     .padding(16)
     .frame(width: 440)
     .onChange(of: dependencies.settings) { _, _ in dependencies.saveSettings() }

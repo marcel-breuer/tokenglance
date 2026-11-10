@@ -10,7 +10,7 @@ struct DiagnosticsView: View {
         .frame(maxWidth: .infinity, alignment: .leading)
         .textSelection(.enabled)
         .padding(12)
-        .glassSurface(cornerRadius: 10)
+        .glassSurface(.panel)
     }
     .padding(16)
   }
