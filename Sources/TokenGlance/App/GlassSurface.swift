@@ -104,16 +104,28 @@ struct GlassSurface: ViewModifier {
   }
 
   @ViewBuilder
+  private func materialSurface(_ shape: RoundedRectangle, dark: Bool) -> some View {
+    #if compiler(>=6.2)
+    if #available(macOS 26.0, *) {
+      Color.clear.glassEffect(.regular, in: shape)
+    } else {
+      shape.fill(.ultraThinMaterial)
+        .overlay { shape.fill(GlassTokens.fill(level, dark: dark)) }
+    }
+    #else
+    shape.fill(.ultraThinMaterial)
+      .overlay { shape.fill(GlassTokens.fill(level, dark: dark)) }
+    #endif
+  }
+
+  @ViewBuilder
   private func surface(_ shape: RoundedRectangle, dark: Bool) -> some View {
     if solid {
       shape.fill(GlassTokens.solid(level))
     } else if level == .inset {
       shape.fill(GlassTokens.fill(level, dark: dark))
-    } else if #available(macOS 26.0, *) {
-      Color.clear.glassEffect(.regular, in: shape)
     } else {
-      shape.fill(.ultraThinMaterial)
-        .overlay { shape.fill(GlassTokens.fill(level, dark: dark)) }
+      materialSurface(shape, dark: dark)
     }
   }
 }
