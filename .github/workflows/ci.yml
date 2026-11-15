@@ -33,5 +33,4 @@ jobs:
       - name: Build and test
         run: |
           swift --version
-          swift build
           swift test
