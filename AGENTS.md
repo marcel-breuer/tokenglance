@@ -49,3 +49,18 @@ Output:
 - Audit the current UI first. If it is already well designed, make only evidence-based fixes; do not redesign it without a concrete issue.
 - The upstream skill's snapshot and story scripts target browser pages. For SwiftUI, inspect the native view and use an available macOS/Xcode screenshot workflow; do not treat browser-only steps as applicable.
 - Preserve the skill's attribution and version record when updating it.
+
+## CI/CD pipeline
+
+Stand: 2026-11-15
+
+Kept workflows:
+
+- `ci.yml` (CI): runs the Swift unit tests (`swift test` on macOS 15) on pull requests and on pushes to `main`, only when sources, tests, `Package.swift`, `scripts/` or workflows change. The separate `swift build` step was removed because `swift test` compiles the project anyway.
+- `release.yml` (Release): manual `workflow_dispatch` release with version validation, tag, Developer ID signing, notarization, packaging and Homebrew cask update.
+
+Removed workflows:
+
+- `dependabot-auto-merge.yml`: removed to cut pipeline runs. It waited for all PR checks and then enabled auto-merge for Dependabot PRs. Dependabot PRs are now reviewed and merged manually. `.github/dependabot.yml` (configuration) stays.
+
+Rule: run all pipeline steps locally before every PR. For this repo that means `swift test` (the same command as `ci.yml`); for changes to `release.yml`, also validate the YAML syntax without triggering a real release.
